@@ -30,7 +30,7 @@ Order verification checklist for every store: Living Room, Sectional Layout, Din
 - **Forgot password** on the sign-in screen emails a reset link. People who first signed in by the old email link use this once to set a password.
 - Sign-up is on, so new leaders need nothing set up by anyone. The rules require a confirmed @1915south.com email.
 - Free plan email limits (per day, whole project): about 1,000 confirmation emails and 150 password-reset emails. Plenty for this.
-- A Microsoft sign-in ("1915 South Field Apps" in Entra) was set up but is not used: it needs a one-time Microsoft admin approval. If that ever happens, the button can be added back.
+- Microsoft sign-in was tried and turned off (it needs a Microsoft admin approval). The Microsoft provider is disabled in Firebase. The "1915 South Field Apps" registration still exists in Microsoft Entra but does nothing; delete it there anytime.
 
 ## Who can do what
 

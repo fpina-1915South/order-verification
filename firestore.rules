@@ -6,7 +6,7 @@
 // rules editor: that would wipe the Smart Scheduler and Store Visit rules.
 // If you ever need to re-add them, paste the block below just above the last two closing braces.
 // It relies on signedIn(), email() and isOwner(), which the Smart Scheduler rules define.
-// signedIn() there accepts a verified email link OR a Microsoft sign-in (single-tenant 1915 South Entra app).
+// signedIn() there requires a confirmed email (email link, or email + password after the confirmation email).
 
     // ───────── Order Verification app (everything below only touches the verifications collection) ─────────
     function ovCompany() {
