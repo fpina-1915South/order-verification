@@ -17,28 +17,16 @@ Order verification checklist for every store: Living Room, Sectional Layout, Din
 | `config.js` | Firebase settings (same values as the Smart Scheduler), owner email and company domain |
 | `firestore.rules` | Who can read and write what. Covers the Smart Scheduler **and** Order Verification |
 
-## One-time setup (about 10 minutes)
+## Where things live
 
-Firebase sign-in is already set up from the Smart Scheduler, so only two steps are left.
+- **Live app:** https://fpina-1915south.github.io/order-verification/
+- **Code:** github.com/fpina-1915South/order-verification
+- **Database rules:** smart-scheduler-1915 > Firestore Database > Rules, in the "Order Verification app" block at the bottom. `firestore.rules` in this repo is a reference copy of only that block. Never paste it over the whole rules editor.
+- **Saved records:** smart-scheduler-1915 > Firestore Database > `verifications`
 
-### 1. Update the database rules
-1. Open console.firebase.google.com and go to the **smart-scheduler-1915** project.
-2. Go to **Firestore Database > Rules**.
-3. Replace everything with the contents of `firestore.rules` from this folder and click **Publish**.
-   This file keeps every Smart Scheduler rule exactly as it was and adds the `verifications` rules at the bottom.
+## Who can sign in
 
-### 2. Put it on GitHub Pages
-1. On github.com, create a new repository named `order-verification`. Public is fine, because no order data lives in these files.
-2. Click **Add file > Upload files**, drag in `index.html`, `boot.js`, `config.js` and `README.md`, and click **Commit**. (`firestore.rules` can go in too. It's only for reference.)
-3. Go to **Settings > Pages**. Set the source to **Deploy from a branch**, branch `main`, folder `/ (root)`, then **Save**.
-4. After a minute the app is live at `https://YOUR-GITHUB-USERNAME.github.io/order-verification/`.
-
-Your `github.io` address should already be on Firebase's authorized list from the Smart Scheduler. If sign-in says the domain isn't authorized, add `YOUR-GITHUB-USERNAME.github.io` under **Authentication > Settings > Authorized domains**.
-
-### 3. Test it, then send the link
-1. Open the link, sign in with `fpina@1915south.com`, fill in a test order and click **Submit Record**.
-2. Click **Records** in the gray bar. Your test should be there. Click **Open** to see the full record.
-3. Send the link to the stores.
+This Firebase project has sign-up turned off (Authentication > Settings > User actions). That means only accounts that already exist in Authentication > Users can sign in. Anyone else gets "Your account isn't set up for this app yet."
 
 ## Who can do what
 

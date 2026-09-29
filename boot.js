@@ -47,7 +47,11 @@
       email = await new Promise(res => $("cfForm").addEventListener("submit", e => { e.preventDefault(); res($("cfEmail").value.trim().toLowerCase()); }));
     }
     try { await auth.signInWithEmailLink(email, location.href); try { localStorage.removeItem(EMAIL_KEY); } catch(e) {} }
-    catch(err){ showSignIn("That sign-in link didn't work. It may have expired or already been used. Send a new one.", true); }
+    catch(err){
+      const code = err && err.code || "";
+      if (/admin-restricted-operation|user-not-found|operation-not-allowed/.test(code)) showSignIn("Your account isn't set up for this app yet. Ask Frank Pina to add " + email + ", then try again.", true);
+      else showSignIn("That sign-in link didn't work. It may have expired or already been used. Send a new one.", true);
+    }
     history.replaceState(null, "", location.origin + location.pathname);
   }
 
