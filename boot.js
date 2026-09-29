@@ -1,5 +1,5 @@
 /* 1915 South Order Verification: sign-in, central save and the records list.
-   People sign in with their 1915 South Microsoft account (email link is the backup).
+   People sign in with their 1915 South email + password. The first time, they confirm their email once.
    Drafts autosave on the device. "Submit Record" saves the finished verification to Firestore.
    firestore.rules decides who can submit and who can read. */
 (function(){
@@ -21,59 +21,110 @@
   const fs = firebase.firestore();
 
   /* ---------- sign in with a one-time email link ---------- */
-  const MS = C.microsoft || {};
-  const PENDING_KEY = "ov-pending-ms";
-  function msProvider(){
-    const p = new firebase.auth.OAuthProvider("microsoft.com");
-    const params = {prompt: "select_account"};
-    if (MS.tenant) params.tenant = MS.tenant;
-    p.setCustomParameters(params);
-    return p;
+  /* ---------- sign in with email + password ----------
+     First time: create an account, confirm the email once (proves they own the 1915 South address).
+     After that: email + password, and the device remembers them. */
+  const APP_URL = () => location.origin + location.pathname;
+  const okDomain = e => !DOMAIN || e.endsWith("@" + DOMAIN);
+  const msgEl = () => $("siMsg");
+  function say(text, err){ const m = msgEl(); if (m){ m.className = "gmsg" + (err ? " err" : ""); m.textContent = text || ""; } }
+  function friendly(err){
+    const c = err && err.code || "";
+    if (/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c)) return "That email and password don't match. Try again, or tap Forgot password.";
+    if (/too-many-requests/.test(c)) return "Too many tries. Wait a few minutes, or tap Forgot password.";
+    if (/weak-password/.test(c)) return "Pick a longer password (at least 8 characters).";
+    if (/invalid-email/.test(c)) return "That doesn't look like an email address.";
+    if (/network/.test(c)) return "No internet connection. Check Wi-Fi and try again.";
+    return (err && err.message) || String(err);
   }
-  async function signInMicrosoft(){
-    const m = $("siMsg"); if (m){ m.className = "gmsg"; m.textContent = "Opening Microsoft sign-in..."; }
-    try {
-      await auth.signInWithPopup(msProvider());
-    } catch(err){
-      const code = err && err.code || "";
-      if (code === "auth/popup-blocked" || code === "auth/operation-not-supported-in-this-environment"){
-        try { await auth.signInWithRedirect(msProvider()); return; } catch(e2){ err = e2; }
-      }
-      if (code === "auth/account-exists-with-different-credential"){
-        // This email already signed in by email link before. Link Microsoft to that account once.
-        const cred = firebase.auth.OAuthProvider.credentialFromError ? firebase.auth.OAuthProvider.credentialFromError(err) : err.credential;
-        const email = (err.customData && err.customData.email) || err.email || "";
-        try { if (cred) localStorage.setItem(PENDING_KEY, JSON.stringify(cred.toJSON())); } catch(e3) {}
-        try {
-          await auth.sendSignInLinkToEmail(email, {url: location.origin + location.pathname, handleCodeInApp: true});
-          try { localStorage.setItem(EMAIL_KEY, email); } catch(e4) {}
-          gate(`<p><b>One-time step.</b> ${esc(email)} already has an account from an earlier email sign-in. We just emailed you a link. Open it on this device and Microsoft sign-in will be connected. After that, the Microsoft button is all you need.</p>`);
-        } catch(e5){ showSignIn("That account already exists. Use the email link below once, then Microsoft sign-in will work.", true); }
-        return;
-      }
-      if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request"){ if (m){ m.textContent = ""; } return; }
-      if (m){ m.className = "gmsg err"; m.textContent = "Microsoft sign-in didn't work: " + (err && err.message || err); }
-    }
-  }
-  function showSignIn(msg, err){
-    gate(`<p>Sign in with your 1915 South Microsoft account (the one you use for Outlook and Teams).</p>
-      <button class="ovbtn" type="button" id="msBtn" style="display:flex;align-items:center;justify-content:center;gap:10px"><svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>Sign in with Microsoft</button>
-      <div class="gmsg ${err ? "err" : ""}" id="siMsg">${esc(msg || "")}</div>
-      <details style="margin-top:14px"><summary style="cursor:pointer;font-size:13px;color:#3F738D">Can't use Microsoft? Email me a sign-in link instead</summary>
-      <form id="siForm" style="margin-top:10px"><input type="email" id="siEmail" required autocomplete="email" placeholder="you@${esc(DOMAIN || "company.com")}">
-      <button class="ovbtn ghost" type="submit">Email me a sign-in link</button></form></details>`);
-    $("msBtn").addEventListener("click", signInMicrosoft);
+  const field = (id, type, ph, ac) => `<input type="${type}" id="${id}" required autocomplete="${ac}" placeholder="${ph}" style="margin-bottom:10px">`;
+  const link = (id, text) => `<a href="#" id="${id}" style="color:#3F738D;font-size:13px;font-weight:600;text-decoration:none">${text}</a>`;
+
+  function showSignIn(msg, err, email){
+    gate(`<p>Sign in with your 1915 South email and password.</p>
+      <form id="siForm">${field("siEmail", "email", "you@" + esc(DOMAIN || "company.com"), "username")}${field("siPass", "password", "Password", "current-password")}
+      <button class="ovbtn" type="submit">Sign in</button></form>
+      <div class="gmsg" id="siMsg"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:14px">${link("goCreate", "First time? Create your account")}${link("goForgot", "Forgot password?")}</div>`);
+    if (email) $("siEmail").value = email;
+    say(msg, err);
+    $("goCreate").onclick = e => { e.preventDefault(); showCreate("", false, $("siEmail").value.trim()); };
+    $("goForgot").onclick = e => { e.preventDefault(); showForgot($("siEmail").value.trim()); };
     $("siForm").addEventListener("submit", async e => {
       e.preventDefault();
-      const email = $("siEmail").value.trim().toLowerCase();
-      if (DOMAIN && !email.endsWith("@" + DOMAIN)){ $("siMsg").className = "gmsg err"; $("siMsg").textContent = "Use your @" + DOMAIN + " email."; return; }
-      $("siMsg").className = "gmsg"; $("siMsg").textContent = "Sending...";
-      try {
-        await auth.sendSignInLinkToEmail(email, {url: location.origin + location.pathname, handleCodeInApp: true});
-        try { localStorage.setItem(EMAIL_KEY, email); } catch(e2) {}
-        gate(`<p><b>Check your email.</b> We sent a sign-in link to <b>${esc(email)}</b>. Open it on this device and you're in.</p><p>It can take a minute. Check junk mail if it doesn't show up.</p>`);
-      } catch(err2){ $("siMsg").className = "gmsg err"; $("siMsg").textContent = "Couldn't send the link: " + (err2 && err2.message || err2); }
+      const email = $("siEmail").value.trim().toLowerCase(), pass = $("siPass").value;
+      if (!okDomain(email)){ say("Use your @" + DOMAIN + " email.", true); return; }
+      say("Signing in...");
+      try { await auth.signInWithEmailAndPassword(email, pass); }
+      catch(err){ say(friendly(err), true); }
     });
+  }
+
+  function showCreate(msg, err, email){
+    gate(`<p><b>Create your account.</b> Use your 1915 South email and pick a password (at least 8 characters). We'll send one email to confirm it's you. After that, you just sign in.</p>
+      <form id="crForm">${field("crEmail", "email", "you@" + esc(DOMAIN || "company.com"), "username")}${field("crPass", "password", "Create a password", "new-password")}${field("crPass2", "password", "Type it again", "new-password")}
+      <button class="ovbtn" type="submit">Create account</button></form>
+      <div class="gmsg" id="siMsg"></div>
+      <div style="margin-top:14px">${link("goSignIn", "Already have an account? Sign in")}</div>`);
+    if (email) $("crEmail").value = email;
+    say(msg, err);
+    $("goSignIn").onclick = e => { e.preventDefault(); showSignIn("", false, $("crEmail").value.trim()); };
+    $("crForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const email = $("crEmail").value.trim().toLowerCase(), p1 = $("crPass").value, p2 = $("crPass2").value;
+      if (!okDomain(email)){ say("Use your @" + DOMAIN + " email.", true); return; }
+      if (p1.length < 8){ say("Pick a password with at least 8 characters.", true); return; }
+      if (p1 !== p2){ say("The two passwords don't match.", true); return; }
+      say("Creating your account...");
+      try {
+        const res = await auth.createUserWithEmailAndPassword(email, p1);
+        try { await res.user.sendEmailVerification({url: APP_URL()}); } catch(e2) {}
+        // onAuthStateChanged takes it from here and shows the "confirm your email" screen
+      } catch(err){
+        if (err && err.code === "auth/email-already-in-use"){
+          showForgot(email, "You already have an account (maybe from an earlier email sign-in). Tap the button below and we'll email you a link to set your password.");
+        } else say(friendly(err), true);
+      }
+    });
+  }
+
+  function showForgot(email, note){
+    gate(`<p>${esc(note || "Enter your 1915 South email and we'll send a link to set a new password.")}</p>
+      <form id="fgForm">${field("fgEmail", "email", "you@" + esc(DOMAIN || "company.com"), "username")}
+      <button class="ovbtn" type="submit">Email me a password link</button></form>
+      <div class="gmsg" id="siMsg"></div>
+      <div style="margin-top:14px">${link("goSignIn2", "Back to sign in")}</div>`);
+    if (email) $("fgEmail").value = email;
+    $("goSignIn2").onclick = e => { e.preventDefault(); showSignIn("", false, $("fgEmail").value.trim()); };
+    $("fgForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const email = $("fgEmail").value.trim().toLowerCase();
+      if (!okDomain(email)){ say("Use your @" + DOMAIN + " email.", true); return; }
+      say("Sending...");
+      try { await auth.sendPasswordResetEmail(email, {url: APP_URL()}); } catch(err){ if (!/user-not-found/.test(err && err.code || "")){ say(friendly(err), true); return; } }
+      showSignIn("If that email has an account, a password link is on its way. Set your password, then sign in here. Check junk mail if you don't see it.", false, email);
+    });
+  }
+
+  function showVerify(u, msg, err){
+    gate(`<p><b>One last step.</b> We sent an email to <b>${esc(u.email)}</b>. Open it and tap the link to confirm it's you, then come back and tap the button below.</p>
+      <button class="ovbtn" type="button" id="vfDone">I've confirmed my email</button>
+      <div class="gmsg" id="siMsg"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:14px">${link("vfResend", "Send it again")}${link("vfOut", "Use a different email")}</div>
+      <p style="font-size:12px;margin-top:12px">Check junk mail if you don't see it.</p>`);
+    say(msg, err);
+    $("vfDone").onclick = async () => {
+      say("Checking...");
+      try {
+        await u.reload();
+        if (auth.currentUser && auth.currentUser.emailVerified){
+          await auth.currentUser.getIdToken(true);   // refresh so the database sees the confirmed email
+          start(auth.currentUser);
+        } else say("Not confirmed yet. Tap the link in the email first (it can take a minute to arrive).", true);
+      } catch(e){ say(friendly(e), true); }
+    };
+    $("vfResend").onclick = async e => { e.preventDefault(); try { await u.sendEmailVerification({url: APP_URL()}); say("Sent. Check your email (and junk mail)."); } catch(err){ say(friendly(err), true); } };
+    $("vfOut").onclick = e => { e.preventDefault(); auth.signOut().then(() => location.reload()); };
   }
 
   async function finishLink(){
@@ -83,19 +134,10 @@
       gate(`<p>Confirm your email to finish signing in.</p><form id="cfForm"><input type="email" id="cfEmail" required placeholder="you@${esc(DOMAIN)}"><button class="ovbtn" type="submit">Finish signing in</button></form>`);
       email = await new Promise(res => $("cfForm").addEventListener("submit", e => { e.preventDefault(); res($("cfEmail").value.trim().toLowerCase()); }));
     }
-    try {
-      const res = await auth.signInWithEmailLink(email, location.href);
-      try { localStorage.removeItem(EMAIL_KEY); } catch(e) {}
-      let pending = null; try { pending = localStorage.getItem(PENDING_KEY); } catch(e) {}
-      if (pending && res && res.user){
-        try { await res.user.linkWithCredential(firebase.auth.AuthCredential.fromJSON(JSON.parse(pending))); } catch(e) {}
-        try { localStorage.removeItem(PENDING_KEY); } catch(e) {}
-      }
-    }
+    try { await auth.signInWithEmailLink(email, location.href); try { localStorage.removeItem(EMAIL_KEY); } catch(e) {} }
     catch(err){
       const code = err && err.code || "";
-      if (/admin-restricted-operation|user-not-found|operation-not-allowed/.test(code)) showSignIn("Your account isn't set up for this app yet. Ask Frank Pina to add " + email + ", then try again.", true);
-      else showSignIn("That sign-in link didn't work. It may have expired or already been used. Send a new one.", true);
+      showSignIn("That old sign-in link didn't work. Sign in with your email and password instead (first time? tap Create your account).", true, email);
     }
     history.replaceState(null, "", location.origin + location.pathname);
   }
@@ -220,8 +262,18 @@
   /* ---------- start ---------- */
   let started = false;
   async function start(u){
-    if (started) return; started = true;
+    if (started) return;
     const email = String(u.email || "").toLowerCase();
+    const viaPassword = (u.providerData || []).some(p => p.providerId === "password");
+    if (!u.emailVerified && viaPassword){
+      // They may have just tapped the confirm link: refresh once before asking
+      try { await u.reload(); } catch(e) {}
+      const cur = auth.currentUser || u;
+      if (!cur.emailVerified){ showVerify(cur); return; }
+      try { await cur.getIdToken(true); } catch(e) {}
+      u = cur;
+    }
+    started = true;
     if (DOMAIN && !email.endsWith("@" + DOMAIN)){
       gate(`<p><b>${esc(email)}</b> isn't a 1915 South email. Sign out and use your @${esc(DOMAIN)} email.</p><button class="ovbtn ghost" id="soBtn">Sign out</button>`);
       $("soBtn").onclick = () => auth.signOut().then(() => location.reload());
@@ -239,7 +291,6 @@
     const b = $("submitBtn"); if (b){ b.disabled = true; b.title = "Sign in to submit"; }
     gate(`<p>Loading...</p>`);
     await finishLink();
-    try { await auth.getRedirectResult(); } catch(e) { if (e && e.code === "auth/account-exists-with-different-credential") showSignIn("This email already has an account. Use the email link once, then Microsoft will work.", true); }
     auth.onAuthStateChanged(u => { if (u) start(u); else showSignIn(); });
   })();
 })();

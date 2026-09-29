@@ -26,13 +26,11 @@ Order verification checklist for every store: Living Room, Sectional Layout, Din
 
 ## Who can sign in
 
-- **Sign in with Microsoft (main way):** leaders tap the button and pick their 1915 South work account (the one they use for Outlook and Teams). No email, no password. The Microsoft app is "1915 South Field Apps" in Microsoft Entra (App registrations). It's single tenant, so only accounts in the 1915 South directory can use it.
-  - Application (client) ID: d9824bad-54c5-4dee-9f96-c446d6b910fb
-  - Directory (tenant) ID: e9214a5c-ed31-4de7-974b-a65564179f04
-  - The client secret lives only in Firebase (Authentication > Sign-in method > Microsoft). **It expires 9/28/2028.** Before then, create a new secret in Entra (Certificates & secrets) and paste it into Firebase.
-- **Email link (backup):** "Can't use Microsoft? Email me a sign-in link instead" on the sign-in screen.
-- Sign-up is on, so new leaders need nothing set up. The rules accept a verified email link or a Microsoft sign-in, plus a @1915south.com email.
-- Anyone who first signed in by email link gets a one-time "connect your account" email the first time they use Microsoft.
+- **Email + password.** First time, a leader taps **Create your account**, enters their @1915south.com email and a password, and confirms their email once from the message Firebase sends. After that they just sign in, and the device remembers them.
+- **Forgot password** on the sign-in screen emails a reset link. People who first signed in by the old email link use this once to set a password.
+- Sign-up is on, so new leaders need nothing set up by anyone. The rules require a confirmed @1915south.com email.
+- Free plan email limits (per day, whole project): about 1,000 confirmation emails and 150 password-reset emails. Plenty for this.
+- A Microsoft sign-in ("1915 South Field Apps" in Entra) was set up but is not used: it needs a one-time Microsoft admin approval. If that ever happens, the button can be added back.
 
 ## Who can do what
 
@@ -51,7 +49,6 @@ Edit `viewers` in `config.js` and commit. (Any signed-in leader can already look
 ## Good to know
 - **Use it in Safari (or Chrome), not a home-screen icon.** The sign-in email link opens in the browser. On an iPad, a home-screen icon keeps its own separate sign-in, so it won't pick up the link.
 - **Shared store iPads stay signed in** as whoever signed in last. The record still captures the Sales Associate and Manager names from Sign-Off, and anyone can tap **Sign out**.
-- **Sign-in emails:** only the backup email link sends email. The free (Spark) plan allows 5 of those per day for the whole project. Microsoft sign-in sends no email, so it isn't limited.
 - **Store Records:** pick a store and a time range, then type an order # to find it. Tap **Open** for the full record.
 - **Seeing the raw data:** Firebase console > Firestore Database > `verifications`.
 
