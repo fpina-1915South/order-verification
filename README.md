@@ -26,7 +26,8 @@ Order verification checklist for every store: Living Room, Sectional Layout, Din
 
 ## Who can sign in
 
-This Firebase project has sign-up turned off (Authentication > Settings > User actions). That means only accounts that already exist in Authentication > Users can sign in. Anyone else gets "Your account isn't set up for this app yet."
+Sign-up is on (Authentication > Settings > User actions), so anyone with a @1915south.com email can sign in with the one-time email link. Nobody has to be added by hand, including new leaders.
+Every rule in the project (Smart Scheduler, Store Visit, Order Verification) requires a **verified** email, so only someone who can open the sign-in email gets in.
 
 ## Who can do what
 
@@ -42,7 +43,7 @@ Submitted records can't be changed by the person who submitted them, and each on
 ## Good to know
 - **Use it in Safari (or Chrome), not a home-screen icon.** The sign-in email link opens in the browser. On an iPad, a home-screen icon keeps its own separate sign-in, so it won't pick up the link.
 - **Shared store iPads stay signed in** as whoever signed in last. The record still captures the Sales Associate and Manager names from Sign-Off, and anyone can tap **Sign out**.
-- **Sign-in emails:** on the free Firebase plan, sign-in emails are capped at a small number per day (the Smart Scheduler setup notes put it at 5). Rolling this out to 41 stores will need more than that, so switch the project to the **Blaze (pay as you go)** plan first and set a budget alert (for example $10). At this size the cost should be close to nothing.
+- **Sign-in emails:** the free (Spark) plan sends only 5 email-link sign-in emails per day for the whole project. The Blaze (pay as you go) plan raises that to 25,000 per day. Sign-in emails themselves are free, and this app's usage fits inside Blaze's no-cost allowances. Set a budget alert (for example $10).
 - **Seeing the raw data:** Firebase console > Firestore Database > `verifications`.
 
 ## Making changes later
