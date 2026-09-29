@@ -16,6 +16,15 @@
         && request.resource.data.submittedBy == request.auth.uid
         && request.resource.data.submittedByEmail == email()
         && request.resource.data.submittedAt == request.time;
-      allow read: if isAdmin() || (ovCompany() && resource.data.submittedBy == request.auth.uid);
+      allow read: if ovCompany();   // any verified 1915 South leader can look up any store
+      allow update, delete: if isOwner();
+    }
+    // The full frozen record for each verification (same id), loaded when someone taps Open.
+    match /verificationRecords/{id} {
+      allow create: if ovCompany()
+        && request.resource.data.submittedBy == request.auth.uid
+        && request.resource.data.submittedAt == request.time
+        && request.resource.data.htmlRecord.size() < 900000;
+      allow read: if ovCompany();   // any verified 1915 South leader can look up any store
       allow update, delete: if isOwner();
     }

@@ -202,7 +202,7 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
   <button class="new-btn" onclick="newInspection()">+ New Inspection</button>
 </div>
 
-<div id="ovBar" hidden><span id="ovWho"></span><button id="ovRecords" hidden>Records</button><button id="ovOut">Sign out</button></div>
+<div id="ovBar" hidden><span id="ovWho"></span><button id="ovRecords" hidden>Store Records</button><button id="ovOut">Sign out</button></div>
 <div id="save-toast">✓ Saved</div>
 <div id="pdf-tip"></div>
 
@@ -1150,6 +1150,7 @@ updateProtectionFlag();
 #ovRec .in{padding:18px;}
 #ovRec h2{font-size:17px;color:#003B4A;margin-bottom:10px;}
 #ovRec .tools{display:flex;gap:8px;margin-bottom:10px;}
+#ovRec .tools select{flex:1;min-width:0;font:inherit;font-size:14px;padding:8px 10px;border:1px solid #CBD5E1;border-radius:8px;background:#fff;color:#003B4A;font-weight:600;}
 #ovRec .tools input{flex:1;font:inherit;font-size:14px;padding:8px 10px;border:1px solid #CBD5E1;border-radius:8px;}
 #ovRec table{width:100%;border-collapse:collapse;font-size:13px;}
 #ovRec th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#595959;padding:6px;border-bottom:1px solid #CBD5E1;}
@@ -1160,10 +1161,11 @@ updateProtectionFlag();
 </style>
 <div id="ovGate"><div class="card"><h1>1915 <em>South</em></h1><div class="sub">Order Verification</div><div id="ovGateBody"><p>Loading…</p></div></div></div>
 <dialog id="ovRec"><div class="in">
-  <h2>Submitted verifications</h2>
-  <div class="tools"><input id="ovFilter" type="search" placeholder="Filter by order #, store, associate or manager"><button class="ovbtn ghost" style="width:auto;padding:8px 14px" id="ovRecClose">Close</button></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0">Store Records</h2><button class="ovbtn ghost" style="width:auto;padding:7px 14px" id="ovRecClose">Close</button></div>
+  <div class="tools"><select id="ovRecStore" aria-label="Store"></select><select id="ovRecRange" aria-label="Time range"><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 12 months</option><option value="0">All time</option></select></div>
+  <div class="tools"><input id="ovFilter" type="search" placeholder="Look up an order #, associate or manager"></div>
   <label style="display:flex;gap:6px;align-items:center;font-size:13px;color:#802020;font-weight:700;margin:-2px 0 10px"><input type="checkbox" id="ovFlagOnly" style="width:auto;margin:0"> Only show declined protection</label>
-  <div class="wrap"><table><thead><tr><th>Submitted</th><th>Store</th><th>Order #</th><th>Associate</th><th>Protection</th><th>Checks</th><th></th></tr></thead><tbody id="ovRecBody"></tbody></table></div>
+  <div class="wrap"><table><thead><tr id="ovRecHead"></tr></thead><tbody id="ovRecBody"></tbody></table></div>
   <div class="gmsg" id="ovRecMsg"></div>
 </div></dialog>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
