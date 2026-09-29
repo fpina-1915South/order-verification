@@ -26,8 +26,13 @@ Order verification checklist for every store: Living Room, Sectional Layout, Din
 
 ## Who can sign in
 
-Sign-up is on (Authentication > Settings > User actions), so anyone with a @1915south.com email can sign in with the one-time email link. Nobody has to be added by hand, including new leaders.
-Every rule in the project (Smart Scheduler, Store Visit, Order Verification) requires a **verified** email, so only someone who can open the sign-in email gets in.
+- **Sign in with Microsoft (main way):** leaders tap the button and pick their 1915 South work account (the one they use for Outlook and Teams). No email, no password. The Microsoft app is "1915 South Field Apps" in Microsoft Entra (App registrations). It's single tenant, so only accounts in the 1915 South directory can use it.
+  - Application (client) ID: d9824bad-54c5-4dee-9f96-c446d6b910fb
+  - Directory (tenant) ID: e9214a5c-ed31-4de7-974b-a65564179f04
+  - The client secret lives only in Firebase (Authentication > Sign-in method > Microsoft). **It expires 9/28/2028.** Before then, create a new secret in Entra (Certificates & secrets) and paste it into Firebase.
+- **Email link (backup):** "Can't use Microsoft? Email me a sign-in link instead" on the sign-in screen.
+- Sign-up is on, so new leaders need nothing set up. The rules accept a verified email link or a Microsoft sign-in, plus a @1915south.com email.
+- Anyone who first signed in by email link gets a one-time "connect your account" email the first time they use Microsoft.
 
 ## Who can do what
 
@@ -46,7 +51,7 @@ Edit `viewers` in `config.js` and commit. (Any signed-in leader can already look
 ## Good to know
 - **Use it in Safari (or Chrome), not a home-screen icon.** The sign-in email link opens in the browser. On an iPad, a home-screen icon keeps its own separate sign-in, so it won't pick up the link.
 - **Shared store iPads stay signed in** as whoever signed in last. The record still captures the Sales Associate and Manager names from Sign-Off, and anyone can tap **Sign out**.
-- **Sign-in emails:** the free (Spark) plan sends only 5 email-link sign-in emails per day for the whole project. The Blaze (pay as you go) plan raises that to 25,000 per day. Sign-in emails themselves are free, and this app's usage fits inside Blaze's no-cost allowances. Set a budget alert (for example $10).
+- **Sign-in emails:** only the backup email link sends email. The free (Spark) plan allows 5 of those per day for the whole project. Microsoft sign-in sends no email, so it isn't limited.
 - **Store Records:** pick a store and a time range, then type an order # to find it. Tap **Open** for the full record.
 - **Seeing the raw data:** Firebase console > Firestore Database > `verifications`.
 
