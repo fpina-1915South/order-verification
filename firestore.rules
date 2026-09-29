@@ -1,0 +1,47 @@
+rules_version = '2';
+// 1915 South: Smart Scheduler + Order Verification (one Firebase project).
+// Paste this whole file into Firebase > Firestore Database > Rules and click Publish.
+// It replaces the Smart Scheduler rules and keeps every scheduler rule the same.
+// Owner: OWNER below must match ownerEmail in both config.js files.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function OWNER() { return 'fpina@1915south.com'; }
+
+    function signedIn() { return request.auth != null && request.auth.token.email != null && request.auth.token.email_verified == true; }
+    function email() { return request.auth.token.email.lower(); }
+    function isCompany() { return signedIn() && email().matches('.*@1915south[.]com'); }
+    function isOwner() { return signedIn() && email() == OWNER(); }
+    function hasAccess() { return exists(/databases/$(database)/documents/config/access); }
+    function acc() { return get(/databases/$(database)/documents/config/access).data; }
+    function isAdmin() { return isOwner() || (signedIn() && hasAccess() && email() in acc().get('admins', [])); }
+    function isLeader() {
+      return isAdmin() || (signedIn() && hasAccess() && (
+        email() in acc().get('leaders', []) ||
+        (acc().get('allowDomain', false) == true && email().matches('.*@1915south[.]com'))
+      ));
+    }
+
+    // ---------- Smart Scheduler (unchanged) ----------
+    match /config/{doc} { allow read: if signedIn(); allow write: if isOwner(); }
+    match /users/{uid} { allow read: if isLeader(); allow write: if signedIn() && request.auth.uid == uid; }
+    match /stores/{doc} { allow read: if isLeader(); allow write: if isOwner(); }
+    match /settings/{doc} { allow read: if isLeader(); allow write: if isOwner(); }
+    match /actuals/{doc} { allow read: if isLeader(); allow write: if isAdmin(); }
+    match /rosters/{doc} { allow read, write: if isLeader(); }
+    match /teams/{doc} { allow read, write: if isLeader(); }
+    match /perf/{doc} { allow read, write: if isLeader(); }
+
+    // ---------- Order Verification ----------
+    // Anyone with a verified @1915south.com email can submit, stamped with their own account and the server time.
+    // Owner and admins read everything. Everyone else reads only what they submitted.
+    // Nobody but the owner can change or delete a submitted record.
+    match /verifications/{id} {
+      allow create: if isCompany()
+        && request.resource.data.submittedBy == request.auth.uid
+        && request.resource.data.submittedByEmail == email()
+        && request.resource.data.submittedAt == request.time;
+      allow read: if isAdmin() || (signedIn() && resource.data.submittedBy == request.auth.uid);
+      allow update, delete: if isOwner();
+    }
+  }
+}
