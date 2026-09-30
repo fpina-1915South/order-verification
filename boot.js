@@ -59,7 +59,9 @@
       <form id="siForm">${field("siEmail", "email", "you@" + esc(DOMAIN || "company.com"), "username")}${field("siPass", "password", "Password", "current-password")}
       <button class="ovbtn" type="submit">Sign in</button></form>
       <div class="gmsg" id="siMsg"></div>
-      <div style="display:flex;justify-content:space-between;margin-top:14px">${link("goCreate", "First time? Create your account")}${link("goForgot", "Forgot password?")}</div>`);
+      <div style="text-align:right;margin-top:10px">${link("goForgot", "Forgot password?")}</div>
+      <div style="display:flex;align-items:center;gap:10px;margin:16px 0 12px;color:#595959;font-size:13px;font-weight:600"><span style="flex:1;height:1px;background:#CBD5E1"></span>First time here?<span style="flex:1;height:1px;background:#CBD5E1"></span></div>
+      <button class="ovbtn" type="button" id="goCreate" style="background:#F68C2C;border-color:#F68C2C;color:#fff">Create your account</button>`);
     if (email) $("siEmail").value = email;
     say(msg, err);
     $("goCreate").onclick = e => { e.preventDefault(); showCreate("", false, $("siEmail").value.trim()); };
