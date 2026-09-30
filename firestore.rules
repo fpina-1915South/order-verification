@@ -2,7 +2,7 @@
 //
 // These live in the smart-scheduler-1915 Firebase project, at the bottom of the rules
 // (Firestore Database > Rules), after the Smart Scheduler and Store Visit rules.
-// They were published there on 2026-09-29. Do NOT paste this file over the whole
+// They were published there on 2026-09-29 (approved list added 2026-09-30). Do NOT paste this file over the whole
 // rules editor: that would wipe the Smart Scheduler and Store Visit rules.
 // If you ever need to re-add them, paste the block below just above the last two closing braces.
 // It relies on signedIn(), email() and isOwner(), which the Smart Scheduler rules define.
@@ -10,7 +10,16 @@
 
     // ───────── Order Verification app (everything below only touches the verifications collection) ─────────
     function ovCompany() {
-      return signedIn() && email().matches('.*@1915south[.]com');
+      return request.auth != null && request.auth.token.email != null
+        && email().matches('.*@1915south[.]com')
+        && (request.auth.token.email_verified == true
+            || exists(/databases/$(database)/documents/ovApproved/$(email())));   // confirmed email, OR on Frank's approved list (no email needed)
+    }
+    // Approved leader emails for Order Verification (one doc per email, id = lowercase email).
+    // People on this list can use the app without the confirmation email. Only Frank can change it.
+    match /ovApproved/{em} {
+      allow get: if request.auth != null && request.auth.token.email != null && email() == em;
+      allow list, create, update, delete: if isOwner();
     }
     match /verifications/{id} {
       allow create: if ovCompany()

@@ -28,8 +28,9 @@ Order verification checklist for every store: Living Room, Sectional Layout, Din
 
 - **Email + password.** First time, a leader taps **Create your account**, enters their @1915south.com email and a password, and confirms their email once from the message Firebase sends. After that they just sign in, and the device remembers them.
 - **Forgot password** on the sign-in screen emails a reset link. People who first signed in by the old email link use this once to set a password.
-- Sign-up is on, so new leaders need nothing set up by anyone. The rules require a confirmed @1915south.com email.
-- Free plan email limits (per day, whole project): about 1,000 confirmation emails and 150 password-reset emails. Plenty for this.
+- **Approved list (no email needed).** Leaders on Frank's approved list create an account and go straight in, with no confirmation email. Frank manages it with the **Approved list** button (only he sees it): paste emails to add, tap Remove to take someone off. Stored in Firestore `ovApproved` (one document per email).
+- Leaders not on the list can still sign up; they get one confirmation email. The rules require a @1915south.com email that is either confirmed or on the approved list.
+- **Email limit:** the project can only send a few emails a day, so the app saves them. It sends no email to approved leaders, sends a confirmation at most once a day per device, and never sends one from Submit. Forgot password still sends an email.
 - Microsoft sign-in was tried and turned off (it needs a Microsoft admin approval). The Microsoft provider is disabled in Firebase. The "1915 South Field Apps" registration still exists in Microsoft Entra but does nothing; delete it there anytime.
 
 ## Who can do what

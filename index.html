@@ -202,7 +202,7 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
   <button class="new-btn" onclick="newInspection()">+ New Inspection</button>
 </div>
 
-<div id="ovBar" hidden><span id="ovWho"></span><button id="ovRecords" hidden>Store Records</button><button id="ovOut">Sign out</button></div>
+<div id="ovBar" hidden><span id="ovWho"></span><button id="ovRecords" hidden>Store Records</button><button id="ovApprove" hidden>Approved list</button><button id="ovOut">Sign out</button></div>
 <div id="save-toast">✓ Saved</div>
 <div id="pdf-tip"></div>
 
@@ -1145,6 +1145,7 @@ updateProtectionFlag();
 #ovBar{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap;background:#EDEDED;color:#595959;font-size:12px;padding:6px 16px;}
 #ovBar[hidden]{display:none;}
 #ovBar button{background:none;border:1px solid #3F738D;color:#003B4A;border-radius:7px;padding:4px 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;}
+#ovApp{margin:auto;border:none;border-radius:14px;padding:0;width:min(560px,96vw);max-height:88vh;}#ovApp::backdrop{background:rgba(0,0,0,.45);}#ovApp .in{padding:18px;}#ovApp h2{font-size:17px;color:#003B4A;margin:0;}#ovApp textarea{width:100%;box-sizing:border-box;font:inherit;font-size:13px;padding:8px 10px;border:1px solid #CBD5E1;border-radius:8px;min-height:90px;}#ovAppList{max-height:40vh;overflow:auto;font-size:13px;border:1px solid #E2E8F0;border-radius:8px;margin-top:10px;}#ovAppList div{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-bottom:1px solid #F1F5F9;}#ovAppList button{font-size:12px;color:#802020;background:none;border:none;cursor:pointer;font-weight:700;}
 #ovRec{margin:auto;border:none;border-radius:14px;padding:0;width:min(760px,96vw);max-height:88vh;}
 #ovRec::backdrop{background:rgba(0,0,0,.45);}
 #ovRec .in{padding:18px;}
@@ -1167,6 +1168,15 @@ updateProtectionFlag();
   <label style="display:flex;gap:6px;align-items:center;font-size:13px;color:#802020;font-weight:700;margin:-2px 0 10px"><input type="checkbox" id="ovFlagOnly" style="width:auto;margin:0"> Only show declined protection</label>
   <div class="wrap"><table><thead><tr id="ovRecHead"></tr></thead><tbody id="ovRecBody"></tbody></table></div>
   <div class="gmsg" id="ovRecMsg"></div>
+</div></dialog>
+<dialog id="ovApp"><div class="in">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px"><h2>Approved list</h2><button class="ovbtn ghost" style="width:auto;padding:7px 14px" id="ovAppClose">Close</button></div>
+  <p style="font-size:13px;margin:0 0 10px">Leaders on this list can create an account and use the app without a confirmation email. Paste one or more @1915south.com emails (one per line, or separated by commas).</p>
+  <textarea id="ovAppAdd" placeholder="newleader@1915south.com"></textarea>
+  <button class="ovbtn" type="button" id="ovAppSave" style="margin-top:8px">Add to list</button>
+  <div class="gmsg" id="ovAppMsg"></div>
+  <input id="ovAppFilter" type="search" placeholder="Search the list" style="width:100%;box-sizing:border-box;margin-top:10px;font:inherit;font-size:13px;padding:7px 10px;border:1px solid #CBD5E1;border-radius:8px">
+  <div id="ovAppList"></div>
 </div></dialog>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>

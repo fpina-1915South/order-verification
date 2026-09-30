@@ -37,6 +37,20 @@
     if (/network/.test(c)) return "No internet connection. Check Wi-Fi and try again.";
     return (err && err.message) || String(err);
   }
+  /* Frank's approved list: people on it skip the confirmation email (Firebase free plan only sends a few emails a day). */
+  async function isApproved(u){
+    try { const d = await fs.doc("ovApproved/" + String(u.email || "").toLowerCase()).get(); return d.exists; } catch(e){ return false; }
+  }
+  /* Send a confirmation email at most once a day from this device, to save the daily email limit. */
+  const SENT_KEY = "ov-confirm-sent";
+  async function sendConfirmOnce(u, force){
+    let last = 0; try { last = +localStorage.getItem(SENT_KEY + ":" + u.email) || 0; } catch(e) {}
+    if (!force && Date.now() - last < 864e5) return "skipped";
+    if (force && Date.now() - last < 864e5) return "wait";
+    await u.sendEmailVerification({url: APP_URL()});
+    try { localStorage.setItem(SENT_KEY + ":" + u.email, String(Date.now())); } catch(e) {}
+    return "sent";
+  }
   const field = (id, type, ph, ac) => `<input type="${type}" id="${id}" required autocomplete="${ac}" placeholder="${ph}" style="margin-bottom:10px">`;
   const link = (id, text) => `<a href="#" id="${id}" style="color:#3F738D;font-size:13px;font-weight:600;text-decoration:none">${text}</a>`;
 
@@ -78,7 +92,8 @@
       say("Creating your account...");
       try {
         const res = await auth.createUserWithEmailAndPassword(email, p1);
-        try { await res.user.sendEmailVerification({url: APP_URL()}); } catch(e2) {}
+        // Approved leaders need no email. Everyone else gets one confirmation email.
+        if (!(await isApproved(res.user))){ try { await sendConfirmOnce(res.user); } catch(e2) {} }
         // onAuthStateChanged takes it from here and shows the "confirm your email" screen
       } catch(err){
         if (err && err.code === "auth/email-already-in-use"){
@@ -111,19 +126,24 @@
       <button class="ovbtn" type="button" id="vfDone">I've confirmed my email</button>
       <div class="gmsg" id="siMsg"></div>
       <div style="display:flex;justify-content:space-between;margin-top:14px">${link("vfResend", "Send it again")}${link("vfOut", "Use a different email")}</div>
-      <p style="font-size:12px;margin-top:12px">Check junk mail if you don't see it.</p>`);
+      <p style="font-size:12px;margin-top:12px">Check junk mail if you don't see it. No email? Ask Frank to add you to the approved list, then tap the button above.</p>`);
     say(msg, err);
     $("vfDone").onclick = async () => {
       say("Checking...");
       try {
         await u.reload();
-        if (auth.currentUser && auth.currentUser.emailVerified){
+        if (auth.currentUser && (auth.currentUser.emailVerified || await isApproved(auth.currentUser))){
           await auth.currentUser.getIdToken(true);   // refresh so the database sees the confirmed email
           start(auth.currentUser);
         } else say("Not confirmed yet. Tap the link in the email first (it can take a minute to arrive).", true);
       } catch(e){ say(friendly(e), true); }
     };
-    $("vfResend").onclick = async e => { e.preventDefault(); try { await u.sendEmailVerification({url: APP_URL()}); say("Sent. Check your email (and junk mail)."); } catch(err){ say(friendly(err), true); } };
+    $("vfResend").onclick = async e => { e.preventDefault();
+      try {
+        const r = await sendConfirmOnce(u, true);
+        if (r === "wait") say("We already sent one in the last 24 hours. Check junk mail, or ask Frank to add you to the approved list.", true);
+        else say("Sent. Check your email (and junk mail).");
+      } catch(err){ say(/too-many|quota|exceeded/i.test((err && err.code || "") + (err && err.message || "")) ? "Today's email limit is used up. Try tomorrow, or ask Frank to add you to the approved list." : friendly(err), true); } };
     $("vfOut").onclick = e => { e.preventDefault(); auth.signOut().then(() => location.reload()); };
   }
 
@@ -166,9 +186,8 @@
       const me = auth.currentUser || u;
       try { await me.reload(); } catch(e) {}
       try { await me.getIdToken(true); } catch(e) {}
-      if (!me.emailVerified){
-        try { await me.sendEmailVerification({url: APP_URL()}); } catch(e) {}
-        const x = new Error("Your email isn't confirmed yet. We just sent a confirmation email to " + me.email + ". Tap the link in it, then tap Submit again. Your work is saved on this device.");
+      if (!me.emailVerified && !(await isApproved(me))){
+        const x = new Error("Your email isn't confirmed yet and you're not on the approved list. Tap the link in the confirmation email, or ask Frank to add " + me.email + " to the approved list. Then tap Submit again. Your work is saved on this device.");
         x.code = "ov/unverified"; throw x;
       }
       const ref = fs.collection("verifications").doc();
@@ -275,6 +294,45 @@
     $("ovRecBody").onclick = e => { const id = e.target && e.target.getAttribute("data-id"); if (id) openOne(id); };
   }
 
+  /* ---------- Approved list (Frank only): who can skip the confirmation email ---------- */
+  let APPROVED = [];
+  async function loadApproved(){
+    $("ovAppMsg").className = "gmsg"; $("ovAppMsg").textContent = "Loading...";
+    try { const snap = await fs.collection("ovApproved").get(); APPROVED = snap.docs.map(d => d.id).sort(); $("ovAppMsg").textContent = APPROVED.length + " approved"; }
+    catch(e){ $("ovAppMsg").className = "gmsg err"; $("ovAppMsg").textContent = "Couldn't load the list: " + e.message; }
+    drawApproved();
+  }
+  function drawApproved(){
+    const q = $("ovAppFilter").value.trim().toLowerCase();
+    $("ovAppList").innerHTML = APPROVED.filter(x => !q || x.includes(q)).map(x => `<div><span>${esc(x)}</span><button data-em="${esc(x)}">Remove</button></div>`).join("") || `<div>No one yet.</div>`;
+  }
+  function wireApproved(){
+    $("ovApprove").hidden = false;
+    $("ovApprove").onclick = () => { $("ovApp").showModal(); loadApproved(); };
+    $("ovAppClose").onclick = () => $("ovApp").close();
+    $("ovAppFilter").oninput = drawApproved;
+    $("ovAppSave").onclick = async () => {
+      const list = Array.from(new Set(($("ovAppAdd").value.toLowerCase().match(/[a-z0-9._%+-]+@[a-z0-9.-]+/g) || [])));
+      const bad = list.filter(x => !okDomain(x)), good = list.filter(x => okDomain(x));
+      if (!good.length){ $("ovAppMsg").className = "gmsg err"; $("ovAppMsg").textContent = bad.length ? "Only @" + DOMAIN + " emails can be added." : "Paste at least one email."; return; }
+      try {
+        for (let i = 0; i < good.length; i += 400){
+          const b = fs.batch();
+          good.slice(i, i + 400).forEach(x => b.set(fs.doc("ovApproved/" + x), {addedBy: auth.currentUser.email, addedAt: firebase.firestore.FieldValue.serverTimestamp()}));
+          await b.commit();
+        }
+        $("ovAppAdd").value = "";
+        await loadApproved();
+        $("ovAppMsg").textContent = "Added " + good.length + (bad.length ? " (skipped " + bad.length + " non-1915 South)" : "") + ". " + APPROVED.length + " approved.";
+      } catch(e){ $("ovAppMsg").className = "gmsg err"; $("ovAppMsg").textContent = "Couldn't save: " + e.message; }
+    };
+    $("ovAppList").onclick = async e => {
+      const em = e.target && e.target.getAttribute("data-em"); if (!em) return;
+      try { await fs.doc("ovApproved/" + em).delete(); APPROVED = APPROVED.filter(x => x !== em); drawApproved(); $("ovAppMsg").textContent = "Removed " + em + ". " + APPROVED.length + " approved."; }
+      catch(err){ $("ovAppMsg").className = "gmsg err"; $("ovAppMsg").textContent = "Couldn't remove: " + err.message; }
+    };
+  }
+
   /* ---------- start ---------- */
   let started = false;
   async function start(u){
@@ -285,7 +343,7 @@
       // They may have just tapped the confirm link: refresh once before asking
       try { await u.reload(); } catch(e) {}
       const cur = auth.currentUser || u;
-      if (!cur.emailVerified){ showVerify(cur); return; }
+      if (!cur.emailVerified && !(await isApproved(cur))){ showVerify(cur); return; }
       try { await cur.getIdToken(true); } catch(e) {}
       u = cur;
     }
@@ -300,6 +358,7 @@
     wireSubmit(u);
     ADMIN = isViewer(email);   // viewers also get "All stores"
     wireRecords();          // every signed-in leader can look up any store
+    if (OWNER && email === OWNER) wireApproved();   // only Frank manages the approved list
     $("ovGate").hidden = true; $("ovBar").hidden = false;
   }
 
