@@ -1065,7 +1065,7 @@ function buildRecordHTML(id){
        + doc.outerHTML + `</div></body></html>`;
 }
 
-function tip(msg){const t=document.getElementById('pdf-tip');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3000);}
+function tip(msg){const t=document.getElementById('pdf-tip');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),Math.max(3000,msg.length*60));}
 
 async function submitRecord(){
   const btn=document.getElementById('submitBtn');
@@ -1095,7 +1095,7 @@ async function submitRecord(){
     btn.textContent='✓ Submitted';
     setTimeout(()=>{btn.disabled=false;btn.textContent='✓ Submit Record';},2500);
   }catch(e){
-    tip('Save failed ('+(e&&e.message||e)+'). Your work is still saved on this device. Try again or use Save as PDF.');
+    tip(e && /^ov\//.test(e.code||'') ? e.message : 'Save failed ('+(e&&e.message||e)+'). Your work is still saved on this device. Try again or use Save as PDF.');
     btn.disabled=false; btn.textContent='✓ Submit Record';
   }
 }

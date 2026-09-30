@@ -162,11 +162,27 @@
       const html = record.htmlRecord || "";
       const summary = Object.assign({}, record, stamp, {hasRecord: !!html});
       delete summary.htmlRecord;
+      // Always send a fresh sign-in token, so a just-confirmed email is seen by the database
+      const me = auth.currentUser || u;
+      try { await me.reload(); } catch(e) {}
+      try { await me.getIdToken(true); } catch(e) {}
+      if (!me.emailVerified){
+        try { await me.sendEmailVerification({url: APP_URL()}); } catch(e) {}
+        const x = new Error("Your email isn't confirmed yet. We just sent a confirmation email to " + me.email + ". Tap the link in it, then tap Submit again. Your work is saved on this device.");
+        x.code = "ov/unverified"; throw x;
+      }
       const ref = fs.collection("verifications").doc();
       const batch = fs.batch();
       batch.set(ref, summary);
       if (html) batch.set(fs.collection("verificationRecords").doc(ref.id), Object.assign({htmlRecord: html}, stamp));
-      await batch.commit();
+      try { await batch.commit(); }
+      catch(e){
+        if (e && e.code === "permission-denied"){
+          const x = new Error("The database didn't accept this save for " + me.email + ". Tap Sign out, sign back in, and submit again. Your work is saved on this device. If it keeps happening, send Frank a screenshot.");
+          x.code = "ov/denied"; throw x;
+        }
+        throw e;
+      }
     };
     const b = $("submitBtn"); if (b){ b.disabled = false; b.title = ""; }
   }
