@@ -6,7 +6,7 @@ Order verification checklist for every store: Living Room, Sectional Layout, Din
 - Sign-in and saved records run on the same Google Firebase project as the Smart Scheduler (`smart-scheduler-1915`).
 - Drafts autosave on the device while someone is filling out the form.
 - **Submit Record** saves the finished verification to the database.
-- Records are saved by **order number**. The app does not collect customer names.
+- **Pre-purchase / Post-purchase toggle** in the header. Pre-purchase (before the sale is written) asks for the **guest name**. Post-purchase (after the ticket is written) asks for the **ticket #**. Store Records shows which one with a PRE or POST tag.
 
 ## Files
 

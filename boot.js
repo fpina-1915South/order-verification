@@ -219,6 +219,9 @@
     if (f === "saved") return b("#2E9E6A", "Saved by leader");
     return esc(r.protection || "");
   };
+  const idCell = r => r.mode === "pre"
+    ? `<span style="font-size:10px;font-weight:800;color:#F68C2C">PRE</span> <b>${esc(r.guestName || "")}</b>`
+    : `${r.mode === "post" ? '<span style="font-size:10px;font-weight:800;color:#3F738D">POST</span> ' : ""}<b>${esc(r.order || "")}</b>`;
   function storeList(){ try { return Array.isArray(STORES) ? STORES : []; } catch(e){ return []; } }
   function fillStorePicker(){
     const sel = $("ovRecStore"); if (!sel || sel.options.length) return;
@@ -229,9 +232,9 @@
     const q = $("ovFilter").value.trim().toLowerCase();
     const onlyFlag = $("ovFlagOnly") && $("ovFlagOnly").checked;
     const all = $("ovRecStore").value === "__all";
-    const rows = ROWS.filter(r => (!onlyFlag || r.protectionFlag === "open" || r.protectionFlag === "still") && (!q || [r.order, r.store, r.associate, r.manager, r.protection].join(" ").toLowerCase().includes(q)));
-    $("ovRecHead").innerHTML = `<th>Submitted</th>${all ? "<th>Store</th>" : ""}<th>Order #</th><th>Associate</th><th>Manager</th><th>Protection</th><th>Checks</th><th></th>`;
-    $("ovRecBody").innerHTML = rows.map(r => `<tr><td>${esc(fmt(r.submittedAt))}</td>${all ? `<td>${esc(r.store)}</td>` : ""}<td><b>${esc(r.order)}</b></td><td>${esc(r.associate)}</td><td>${esc(r.manager)}</td><td>${protBadge(r)}</td><td>${esc(r.checksConfirmed)}/${esc(r.checksTotal)}</td><td>${(r.hasRecord || r.htmlRecord) ? `<button data-id="${esc(r.id)}">Open</button>` : ""}</td></tr>`).join("")
+    const rows = ROWS.filter(r => (!onlyFlag || r.protectionFlag === "open" || r.protectionFlag === "still") && (!q || [r.order, r.guestName, r.store, r.associate, r.manager, r.protection].join(" ").toLowerCase().includes(q)));
+    $("ovRecHead").innerHTML = `<th>Submitted</th>${all ? "<th>Store</th>" : ""}<th>Guest / Ticket #</th><th>Associate</th><th>Manager</th><th>Protection</th><th>Checks</th><th></th>`;
+    $("ovRecBody").innerHTML = rows.map(r => `<tr><td>${esc(fmt(r.submittedAt))}</td>${all ? `<td>${esc(r.store)}</td>` : ""}<td>${idCell(r)}</td><td>${esc(r.associate)}</td><td>${esc(r.manager)}</td><td>${protBadge(r)}</td><td>${esc(r.checksConfirmed)}/${esc(r.checksTotal)}</td><td>${(r.hasRecord || r.htmlRecord) ? `<button data-id="${esc(r.id)}">Open</button>` : ""}</td></tr>`).join("")
       || `<tr><td colspan="8">${$("ovRecStore").value ? ("No verifications" + (q || onlyFlag ? " match that filter" : " for this store in this time range") + ".") : "Pick a store to see its verifications."}</td></tr>`;
   }
   async function loadRows(){

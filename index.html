@@ -23,6 +23,9 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 .hf label{color:rgba(255,255,255,.6);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;}
 .hf input{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:5px;color:white;padding:5px 8px;font-size:12px;font-family:inherit;width:130px;}
 .hf input[type=date]{color-scheme:dark;width:140px;min-height:28px;-webkit-appearance:none;appearance:none;}
+.ovmode{display:flex;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:7px;padding:2px;}
+.ovmode button{border:none;background:transparent;color:rgba(255,255,255,.75);font:inherit;font-size:11px;font-weight:700;padding:5px 10px;border-radius:5px;cursor:pointer;white-space:nowrap;}
+.ovmode button.on{background:#F68C2C;color:#fff;}
 .hf input::placeholder{color:rgba(255,255,255,.3);}
 .hf input:focus{outline:none;border-color:#F59E0B;background:rgba(255,255,255,.18);}
 
@@ -192,7 +195,9 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 <div id="hdr">
   <div class="brand">1915 <em>South</em></div>
   <div class="hfields">
-    <div class="hf"><label>Order #</label><input type="text" placeholder="Order #" autocapitalize="characters" autocomplete="off" style="width:150px;"></div>
+    <div class="hf"><div class="ovmode" role="group" aria-label="Verification type"><button type="button" data-mode="pre" onclick="setMode('pre')">Pre-purchase</button><button type="button" data-mode="post" onclick="setMode('post')">Post-purchase</button></div></div>
+    <div class="hf" id="hfGuest"><label>Guest</label><input type="text" class="ovx" id="ovGuest" placeholder="Guest name" autocapitalize="words" autocomplete="off" oninput="queueSave()" style="width:150px;"></div>
+    <div class="hf" id="hfOrder"><label>Ticket #</label><input type="text" placeholder="Ticket #" autocapitalize="characters" autocomplete="off" style="width:150px;"></div>
     <div class="hf"><label>Date</label><input type="date" id="ovDate"></div>
     <div class="hf"><label>Store</label><select id="storeSelect" onchange="onStoreChange()" style="width:190px;font-family:inherit;"><option value="">Select store…</option><option value="__other">Other / not listed…</option></select><input type="text" id="storeOther" placeholder="Type store" style="width:120px;display:none;margin-left:6px;"></div>
   </div>
@@ -863,7 +868,7 @@ let saveTimer=null;
 function saveForm(){
   const state={};
   // Text / number inputs and textareas
-  state.inputs=Array.from(document.querySelectorAll('input[type=text],input[type=number],textarea,select.ovsel')).map(el=>el.value);
+  state.inputs=Array.from(document.querySelectorAll('input[type=text]:not(.ovx),input[type=number],textarea,select.ovsel')).map(el=>el.value);
   // Checkboxes
   state.checks=Array.from(document.querySelectorAll('input[type=checkbox]')).map(el=>el.checked);
   // Pills — store selected text per group
@@ -877,6 +882,7 @@ function saveForm(){
   // Date pickers
   state.dates={}; DATE_IDS.forEach(id=>{const el=document.getElementById(id); if(el) state.dates[id]=el.value;});
   // Sectional sketch
+  state.mode=OV_MODE; state.guest=(document.getElementById('ovGuest')||{}).value||'';
   state.placed=placed.map(p=>({pid:p.piece.id,x:p.x,y:p.y,rot:p.rot,id:p.id}));
   state.nid=nid;
   try{
@@ -917,7 +923,7 @@ function restoreForm(){
     }
     Object.entries(s.dates||{}).forEach(([id,v])=>{const el=document.getElementById(id); if(el) el.value=v||'';});
     // Inputs
-    const inputs=document.querySelectorAll('input[type=text],input[type=number],textarea,select.ovsel');
+    const inputs=document.querySelectorAll('input[type=text]:not(.ovx),input[type=number],textarea,select.ovsel');
     (s.inputs||[]).forEach((v,i)=>{if(inputs[i]) setFieldVal(inputs[i],v);});
     // Checkboxes
     const checks=document.querySelectorAll('input[type=checkbox]');
@@ -932,6 +938,9 @@ function restoreForm(){
         if(m&&m[1]===grp&&pill.textContent.trim()===txt) pill.classList.add('on');
       });
     });
+    // Pre / post purchase
+    const g=document.getElementById('ovGuest'); if(g) g.value=s.guest||'';
+    setMode(s.mode || (fieldByPlaceholder('Ticket #') ? 'post' : 'pre'), true);
     // Sketch
     if(s.placed&&s.placed.length){
       nid=s.nid||0;
@@ -957,9 +966,10 @@ function savePDF(){
 function newInspection(){
   if(!confirm('Start a new inspection?\n\nThis will clear all current data. Make sure you have saved your PDF first.')) return;
   try{localStorage.removeItem(SK);localStorage.removeItem(SK_OLD);}catch(e){}
-  document.querySelectorAll('input[type=text],input[type=number],textarea,select.ovsel').forEach(el=>el.value='');
+  document.querySelectorAll('input[type=text]:not(.ovx),input[type=number],textarea,select.ovsel').forEach(el=>el.value='');
   DATE_IDS.forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
   document.getElementById('ovDate').value=todayISO();
+  const g=document.getElementById('ovGuest'); if(g) g.value=''; setMode('pre', true);
   updateProtectionFlag();
   const ss=document.getElementById('storeSelect'); if(ss){ss.value='';} const so=document.getElementById('storeOther'); if(so){so.value='';so.style.display='none';}
   document.querySelectorAll('input[type=checkbox]').forEach(el=>el.checked=false);
@@ -1034,15 +1044,30 @@ function getStoreValue(){
   return oth?oth.value:'';
 }
 
+/* Pre-purchase: before the sale is written, identify by guest name.
+   Post-purchase: after the ticket is written, identify by ticket #. */
+let OV_MODE='pre';
+function esc(v){return String(v==null?'':v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);}
+function setMode(m, quiet){
+  OV_MODE=(m==='post')?'post':'pre';
+  document.querySelectorAll('.ovmode button').forEach(b=>b.classList.toggle('on', b.getAttribute('data-mode')===OV_MODE));
+  const g=document.getElementById('hfGuest'), o=document.getElementById('hfOrder');
+  if(g) g.style.display=OV_MODE==='pre'?'':'none';
+  if(o) o.style.display=OV_MODE==='post'?'':'none';
+  if(!quiet){ const f=document.querySelector(OV_MODE==='pre'?'#ovGuest':'#hfOrder input'); if(f) f.focus(); queueSave(); }
+}
+
 function getIdentity(){
   // Header identity (positional in DOM order: Order #, Date, Store)
-  const order=fieldByPlaceholder('Order #').toUpperCase();
+  const mode=OV_MODE;
+  const order=mode==='post'?fieldByPlaceholder('Ticket #').toUpperCase():'';
+  const guest=mode==='pre'?((document.getElementById('ovGuest')||{}).value||'').replace(/\s+/g,' ').trim():'';
   const date=isoToUS(document.getElementById('ovDate').value);
   const store=normalizeStore(getStoreValue());
   // Sign-off names (first two "Full name" inputs = Sales Associate, Manager)
   const fulls=Array.from(document.querySelectorAll('input[type=text]'))
     .filter(i=>(i.getAttribute('placeholder')||'')==='Full name').map(i=>i.value.trim());
-  return {order,date,store,associate:fulls[0]||'',manager:fulls[1]||''};
+  return {mode,order,guest,date,store,associate:fulls[0]||'',manager:fulls[1]||''};
 }
 
 /* Freeze the current filled form into a self-contained HTML record */
@@ -1059,9 +1084,9 @@ function buildRecordHTML(id){
     else if(c.tagName==='TEXTAREA'){ c.textContent=el.value; }
     else { c.setAttribute('value',el.value); }
   });
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Order Verification — ${sanitizeName(id.order)}</title>${styleEls}</head>`
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Order Verification — ${sanitizeName(id.mode==='pre'?id.guest:id.order)}</title>${styleEls}</head>`
        + `<body><div style="padding:10px;font-family:inherit"><div style="font-weight:700;color:#1E3A5F">1915 South — Order Verification Record</div>`
-       + `<div style="font-size:12px;color:#475569;margin:2px 0 8px">Order #: ${id.order||'—'} · Date: ${id.date||'—'} · Store: ${id.store||'—'} · SA: ${id.associate||'—'} · Mgr: ${id.manager||'—'}</div>`
+       + `<div style="font-size:12px;color:#475569;margin:2px 0 8px">${id.mode==='pre'?'Pre-purchase · Guest: '+esc(id.guest||'—'):'Post-purchase · Ticket #: '+esc(id.order||'—')} · Date: ${id.date||'—'} · Store: ${id.store||'—'} · SA: ${id.associate||'—'} · Mgr: ${id.manager||'—'}</div>`
        + doc.outerHTML + `</div></body></html>`;
 }
 
@@ -1071,18 +1096,18 @@ async function submitRecord(){
   const btn=document.getElementById('submitBtn');
   if(typeof window.OV_SUBMIT!=='function'){ tip('Not signed in. Reload the page and sign in to submit.'); return; }
   const id=getIdentity();
-  const missing=['order','store','date'].filter(k=>!id[k]);
+  const missing=[id.mode==='pre'?'guest':'order','store','date'].filter(k=>!id[k]).map(k=>({guest:'guest name',order:'ticket #'})[k]||k);
   if(missing.length && !confirm('Missing: '+missing.join(', ')+'.\nSubmit the record anyway?')) return;
   const prot=protectionStatus();
   if(prot.state==='open' && !confirm('Protection was declined and no leader follow-up is marked.\nA leader should rebuild value before the guest leaves.\n\nSubmit anyway?')){ goProtection(); return; }
 
   const allChecks=Array.from(document.querySelectorAll('.doc input[type=checkbox]'));
-  const filename=sanitizeName(`${id.store||'NoStore'} - ${id.date||'NoDate'} - ${id.order||'NoOrder'}`);
+  const filename=sanitizeName(`${id.store||'NoStore'} - ${id.date||'NoDate'} - ${id.mode==='pre'?('Pre - '+(id.guest||'NoGuest')):(id.order||'NoTicket')}`);
   let htmlRecord=buildRecordHTML(id);
   if(htmlRecord.length>800000) htmlRecord='';           // stay under the database's 1 MB per-record limit
   const record={
     filename,
-    order:id.order, date:id.date, store:id.store, associate:id.associate, manager:id.manager,
+    mode:id.mode, order:id.order, guestName:id.guest, date:id.date, store:id.store, associate:id.associate, manager:id.manager,
     protection:prot.pp, protectionFollowUp:prot.rb, protectionFlag:prot.state,   // '' | open | still | saved
     checksTotal:allChecks.length, checksConfirmed:allChecks.filter(c=>c.checked).length,
     state:localStorage.getItem(SK)||'',   // raw form state for reload/audit
@@ -1125,6 +1150,7 @@ populateStores();
 })();
 // Restore saved state on load, then default the verification date to today
 restoreForm();
+if(!document.querySelector('.ovmode button.on')) setMode('pre', true);
 (function(){const d=document.getElementById('ovDate'); if(d&&!d.value) d.value=todayISO();})();
 updateProtectionFlag();
 </script>
@@ -1164,7 +1190,7 @@ updateProtectionFlag();
 <dialog id="ovRec"><div class="in">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0">Store Records</h2><button class="ovbtn ghost" style="width:auto;padding:7px 14px" id="ovRecClose">Close</button></div>
   <div class="tools"><select id="ovRecStore" aria-label="Store"></select><select id="ovRecRange" aria-label="Time range"><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 12 months</option><option value="0">All time</option></select></div>
-  <div class="tools"><input id="ovFilter" type="search" placeholder="Look up an order #, associate or manager"></div>
+  <div class="tools"><input id="ovFilter" type="search" placeholder="Look up a guest, ticket #, associate or manager"></div>
   <label style="display:flex;gap:6px;align-items:center;font-size:13px;color:#802020;font-weight:700;margin:-2px 0 10px"><input type="checkbox" id="ovFlagOnly" style="width:auto;margin:0"> Only show declined protection</label>
   <div class="wrap"><table><thead><tr id="ovRecHead"></tr></thead><tbody id="ovRecBody"></tbody></table></div>
   <div class="gmsg" id="ovRecMsg"></div>
