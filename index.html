@@ -37,8 +37,11 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 .sec-hd{background:#1E3A5F;padding:7px 14px;}
 .sec-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .sec-clear{border:1px solid rgba(255,255,255,.45);background:transparent;color:#fff;font:inherit;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:3px 12px;border-radius:5px;cursor:pointer;}
+.sec-btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+.sec-add{background:#F68C2C;border-color:#F68C2C;}
+.sec-rm{border-color:#F3B4B4;color:#FFD6D6;}
 .sec-clear:active{background:rgba(255,255,255,.2);}
-@media print{.sec-clear{display:none!important;}}
+@media print{.sec-btns{display:none!important;}}
 .sec-hd h2{color:white;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;}
 .sec-hd.ora{background:#D97706;}
 .sec-hd.rust{background:#92400E;}
@@ -217,7 +220,7 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 
 <div class="doc">
 <!-- ══ LIVING ROOM ══ -->
-<div class="sec">
+<div class="sec" data-rep="lr" data-n="1">
   <div class="sec-hd"><h2>Living Room</h2></div>
   <div class="sec-bd">
     <div class="g2">
@@ -281,7 +284,7 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 </div>
 
 <!-- ══ DINING ROOM ══ -->
-<div class="sec">
+<div class="sec" data-rep="dr" data-n="1">
   <div class="sec-hd"><h2>Dining Room</h2></div>
   <div class="sec-bd">
     <div class="g2">
@@ -320,7 +323,7 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 </div>
 
 <!-- ══ BEDROOM ══ -->
-<div class="sec">
+<div class="sec" data-rep="br" data-n="1">
   <div class="sec-hd"><h2>Bedroom</h2></div>
   <div class="sec-bd">
     <div class="g2">
@@ -381,7 +384,7 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 </div>
 
 <!-- ══ BEDDING ══ -->
-<div class="sec">
+<div class="sec" data-rep="bd" data-n="1">
   <div class="sec-hd"><h2>Bedding</h2></div>
   <div class="sec-bd">
     <div class="g2">
@@ -555,11 +558,50 @@ function clearSection(sec){
 }
 document.addEventListener('DOMContentLoaded',()=>{
   document.querySelectorAll('.doc .sec').forEach(sec=>{
-    const hd=sec.querySelector('.sec-hd'); if(!hd||!sec.querySelector('.sec-bd')) return;
-    const b=document.createElement('button'); b.type='button'; b.className='sec-clear'; b.textContent='Clear';
-    b.onclick=()=>clearSection(sec); hd.appendChild(b);
+    const hd=sec.querySelector('.sec-hd'); if(!hd||!sec.querySelector('.sec-bd')||hd.querySelector('.sec-btns')) return;
+    addSecButtons(sec);
   });
 });
+/* MULTIPLE ROOMS: "+ Add" makes another Living Room / Dining Room / Bedroom / Bedding.
+   Copies save by name (data-k), so they never shift the original form's saved fields. */
+const REP_NAMES={lr:'Living Room',dr:'Dining Room',br:'Bedroom',bd:'Bedding'};
+const REP_ADD={lr:'+ Add Living Room',dr:'+ Add Dining Room',br:'+ Add Bedroom',bd:'+ Add Mattress'};
+const REP_TPL={};
+document.querySelectorAll('.sec[data-rep]').forEach(sec=>{REP_TPL[sec.dataset.rep]=sec.outerHTML;});
+function repCopies(key){return Array.from(document.querySelectorAll('.sec[data-rep="'+key+'"]'));}
+function addRoom(key, quiet){
+  const all=repCopies(key), last=all[all.length-1];
+  const n=Math.max(...all.map(x=>+x.dataset.n||1))+1;
+  const w=document.createElement('div'); w.innerHTML=REP_TPL[key]; const sec=w.firstElementChild;
+  sec.dataset.n=n; sec.classList.add('rep-copy');
+  sec.querySelector('.sec-hd h2').textContent=REP_NAMES[key]+' '+n;
+  // pills: give this copy its own groups
+  sec.querySelectorAll('.pill').forEach(b=>{const oc=b.getAttribute('onclick')||''; b.setAttribute('onclick',oc.replace(/pick\(this,'([^']+)'\)/,(m,g)=>"pick(this,'"+g+"__"+n+"')"));});
+  // fields: save by name
+  sec.querySelectorAll('input,select,textarea').forEach((el,i)=>{
+    el.classList.add('ovx'); el.dataset.k=(el.dataset.k||(key+'_f'+i))+'__'+n;
+    el.addEventListener(el.tagName==='SELECT'||el.type==='checkbox'?'change':'input',queueSave);
+  });
+  addSecButtons(sec);
+  last.after(sec);
+  if(!quiet){ queueSave(); sec.scrollIntoView({behavior:'smooth',block:'start'}); }
+  return sec;
+}
+function removeRoom(sec){
+  if(!confirm('Remove '+sec.querySelector('.sec-hd h2').textContent+'?')) return;
+  sec.remove(); queueSave();
+}
+function clearRooms(){ document.querySelectorAll('.sec.rep-copy').forEach(x=>x.remove()); }
+function addSecButtons(sec){
+  const hd=sec.querySelector('.sec-hd'); if(!hd) return;
+  hd.querySelectorAll('.sec-btns').forEach(x=>x.remove());
+  const box=document.createElement('div'); box.className='sec-btns';
+  const key=sec.dataset.rep;
+  if(key){ const a=document.createElement('button'); a.type='button'; a.className='sec-clear sec-add'; a.textContent=REP_ADD[key]; a.onclick=()=>addRoom(key); box.appendChild(a); }
+  const c=document.createElement('button'); c.type='button'; c.className='sec-clear'; c.textContent='Clear'; c.onclick=()=>clearSection(sec); box.appendChild(c);
+  if(sec.classList.contains('rep-copy')){ const r=document.createElement('button'); r.type='button'; r.className='sec-clear sec-rm'; r.textContent='Remove'; r.onclick=()=>removeRoom(sec); box.appendChild(r); }
+  hd.appendChild(box);
+}
 /* PILL PICKER */
 function pick(btn,grp){
   btn.closest('.pills').querySelectorAll('.pill').forEach(p=>p.classList.remove('on'));
@@ -918,6 +960,7 @@ function saveForm(){
   // Date pickers
   state.dates={}; DATE_IDS.forEach(id=>{const el=document.getElementById(id); if(el) state.dates[id]=el.value;});
   // Sectional sketch
+  state.rooms={}; Object.keys(REP_TPL).forEach(k=>{state.rooms[k]=repCopies(k).map(x=>+x.dataset.n).filter(n=>n>1);});
   state.extra={}; document.querySelectorAll('.ovx[data-k]').forEach(el=>{state.extra[el.dataset.k]=el.type==='checkbox'?el.checked:el.value;});
   state.mode=OV_MODE; state.guest=(document.getElementById('ovGuest')||{}).value||'';
   state.placed=placed.map(p=>({pid:p.piece.id,x:p.x,y:p.y,rot:p.rot,id:p.id}));
@@ -958,6 +1001,11 @@ function restoreForm(){
       Object.entries(OLD_DATE_POS).forEach(([i,id])=>{s.dates[id]=oldToPicker(id,(s.inputs||[])[+i]);});
       s.inputs=(s.inputs||[]).filter((v,i)=>!(i in OLD_DATE_POS));
     }
+    clearRooms();
+    Object.entries(s.rooms||{}).forEach(([k,ns])=>{(ns||[]).forEach(n=>{const sec=addRoom(k,true); if(sec&&+sec.dataset.n!==n){ /* keep saved numbering */
+      const old=+sec.dataset.n; sec.dataset.n=n; sec.querySelector('.sec-hd h2').textContent=REP_NAMES[k]+' '+n;
+      sec.querySelectorAll('[data-k]').forEach(el=>{el.dataset.k=el.dataset.k.replace(new RegExp('__'+old+'$'),'__'+n);});
+      sec.querySelectorAll('.pill').forEach(b=>b.setAttribute('onclick',b.getAttribute('onclick').replace('__'+old+"'",'__'+n+"'"))); }});});
     Object.entries(s.dates||{}).forEach(([id,v])=>{const el=document.getElementById(id); if(el) el.value=v||'';});
     // Inputs
     const inputs=document.querySelectorAll('input[type=text]:not(.ovx),input[type=number],textarea,select.ovsel:not(.ovx)');
@@ -1012,6 +1060,7 @@ function newInspection(){
   updateProtectionFlag();
   const ss=document.getElementById('storeSelect'); if(ss){ss.value='';} const so=document.getElementById('storeOther'); if(so){so.value='';so.style.display='none';}
   document.querySelectorAll('input[type=checkbox]').forEach(el=>el.checked=false);
+  clearRooms();
   document.querySelectorAll('select.ovx').forEach(el=>el.value='');
   document.querySelectorAll('.pill.on').forEach(el=>el.classList.remove('on'));
   placed=[];selId=null;nid=0;render();
