@@ -173,6 +173,21 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 /* ── PDF INSTRUCTION TOAST ── */
 #pdf-tip{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#1E293B;color:white;font-size:12px;font-weight:500;padding:10px 18px;border-radius:8px;text-align:center;line-height:1.6;opacity:0;transition:opacity .25s;pointer-events:none;z-index:9999;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.3);}
 #pdf-tip.show{opacity:1;}
+.gc-help{font-size:12px;color:#595959;margin:0 0 10px;}
+.gc-sum{background:#F4F8FB;border:1px solid #DBECF1;border-radius:8px;padding:10px 12px;font-size:13px;color:#1E293B;margin-bottom:10px;}
+.gc-sum div{padding:3px 0;border-bottom:1px solid #E6EBF2;}
+.gc-sum div:last-child{border-bottom:none;}
+.gc-sum b{color:#003B4A;}
+.gc-stmt{font-size:14px;font-weight:700;color:#003B4A;margin:6px 0 8px;}
+.gc-pad{position:relative;border:2px dashed #3F738D;border-radius:10px;background:#fff;}
+.gc-canvas{display:block;width:100%;touch-action:none;cursor:crosshair;border-radius:8px;}
+.gc-x{position:absolute;left:12px;bottom:8px;font-size:11px;color:#94A3B8;pointer-events:none;border-top:1px solid #CBD5E1;padding-top:2px;width:60%;}
+.gc-pad-sm{max-width:320px;}
+.gc-row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;gap:8px;}
+.gc-when{font-size:12px;color:#2E9E6A;font-weight:700;}
+.gc-clr{border:1px solid #CBD5E1;background:#fff;color:#003B4A;border-radius:7px;padding:5px 12px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;}
+.gc-pp{margin-top:14px;padding-top:12px;border-top:1px solid #F3B4B4;}
+@media print{.gc-clr{display:none!important;}}
 #ovSaved{position:fixed;top:60px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:10px;background:#003B4A;color:#fff;font-size:13px;font-weight:600;padding:10px 12px 10px 16px;border-radius:10px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.3);max-width:94vw;flex-wrap:wrap;}
 #ovSaved.show{display:flex;}
 #ovSaved button{border:none;border-radius:7px;font:inherit;font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer;background:#F68C2C;color:#fff;}
@@ -621,6 +636,23 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
   </div>
 </div>
 
+<!-- ══ GUEST CONFIRMATION ══ -->
+<div class="sec" id="gcSec">
+  <div class="sec-hd" style="background:#003B4A"><h2>Guest Confirmation</h2></div>
+  <div class="sec-bd">
+    <p class="gc-help">Hand the iPad to the guest. They review their selections and sign with a finger. Required before submitting a Pre-purchase verification.</p>
+    <div id="gcSummary" class="gc-sum"></div>
+    <div class="gc-stmt">I reviewed my selections: items, colors, configuration, sizes and delivery date. They're correct.</div>
+    <div class="gc-pad"><canvas id="gcSig" class="gc-canvas" height="160"></canvas><div class="gc-x">✕ Guest signature</div></div>
+    <div class="gc-row"><span id="gcSigWhen" class="gc-when"></span><button type="button" class="gc-clr" onclick="gcClear('gcSig')">Clear signature</button></div>
+    <div id="gcPP" class="gc-pp" hidden>
+      <div class="gc-stmt" style="color:#802020">I was offered the protection plan and chose to decline it.</div>
+      <div class="gc-pad gc-pad-sm"><canvas id="gcPPSig" class="gc-canvas" height="90"></canvas><div class="gc-x">✕ Guest initials</div></div>
+      <div class="gc-row"><span id="gcPPSigWhen" class="gc-when"></span><button type="button" class="gc-clr" onclick="gcClear('gcPPSig')">Clear initials</button></div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ MANAGER SIGN-OFF ══ -->
 <div class="sec">
   <div class="sec-hd rust"><h2>Manager Sign-Off</h2></div>
@@ -662,6 +694,7 @@ function clearSection(sec){
   sec.querySelectorAll('input[type=checkbox]').forEach(el=>el.checked=false);
   sec.querySelectorAll('input[type=date],input[type=datetime-local]').forEach(el=>el.value='');
   sec.querySelectorAll('.pill.on').forEach(el=>el.classList.remove('on'));
+  sec.querySelectorAll('canvas.gc-canvas').forEach(c=>{GC[c.id]={data:'',at:''}; gcDraw(c.id);});
   if(typeof updateProtectionFlag==='function') updateProtectionFlag();
   queueSave();
 }
@@ -671,6 +704,61 @@ document.addEventListener('DOMContentLoaded',()=>{
     addSecButtons(sec);
   });
 });
+/* GUEST CONFIRMATION: live summary + finger signatures */
+const GC={gcSig:{data:'',at:''},gcPPSig:{data:'',at:''}};
+function gcSummaryRows(){
+  const rows=[];
+  document.querySelectorAll('.doc .sec').forEach(sec=>{
+    if(sec.id==='gcSec'||!sec.querySelector('.sec-bd')||/Sign-Off/i.test(sec.textContent.slice(0,60))) return;
+    const title=(sec.querySelector('.sec-hd h2')||{}).textContent||'';
+    const parts=[];
+    sec.querySelectorAll('.fld').forEach(f=>{
+      const lab=((f.querySelector(':scope > label')||{}).textContent||'').trim();
+      const on=f.querySelector('.pill.on'); if(on) parts.push(lab+': '+on.textContent.trim());
+      const sl=f.querySelector(':scope > select'); if(sl&&sl.value&&sl.value!=='0') parts.push(lab.replace(/^# of /i,'')+': '+sl.value);
+      const tx=f.querySelector(':scope > input[type=text], :scope > input[type=date]'); if(tx&&tx.value.trim()) parts.push(lab+': '+(tx.type==='date'?isoToUS(tx.value):tx.value.trim()));
+    });
+    const items=Array.from(sec.querySelectorAll('label.ck')).filter(l=>!l.closest('.cks')&&l.querySelector('input:checked')).map(l=>l.textContent.trim());
+    if(items.length) parts.push(items.join(', '));
+    if(parts.length) rows.push([title,parts]);
+  });
+  return rows;
+}
+function gcRender(){
+  const box=document.getElementById('gcSummary'); if(!box) return;
+  const rows=gcSummaryRows();
+  box.innerHTML=rows.length?rows.map(([t,p])=>'<div><b>'+esc(t)+':</b> '+esc(p.join(' · '))+'</div>').join(''):'<div>Selections will show here as the form is filled out.</div>';
+  const declined=(typeof protectionStatus==='function')&&protectionStatus().pp==='Declined';
+  const pp=document.getElementById('gcPP'); if(pp) pp.hidden=!declined;
+}
+function gcSize(id){
+  const c=document.getElementById(id); if(!c) return;
+  const w=c.clientWidth||600; if(c.width===w) return;
+  c.width=w; gcDraw(id);
+}
+function gcDraw(id){
+  const c=document.getElementById(id), ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
+  const st=GC[id]; const w=document.getElementById(id+'When');
+  if(w) w.textContent=st.at?'✓ Signed '+new Date(st.at).toLocaleString([], {month:'numeric',day:'numeric',year:'2-digit',hour:'numeric',minute:'2-digit'}):'';
+  if(st.data){ const im=new Image(); im.onload=()=>ctx.drawImage(im,0,0,c.width,c.height); im.src=st.data; }
+}
+function gcClear(id){ GC[id]={data:'',at:''}; gcDraw(id); queueSave(); }
+function gcWire(id){
+  const c=document.getElementById(id); if(!c) return;
+  const ctx=c.getContext('2d'); let down=false, last=null, drew=false;
+  const pt=e=>{const r=c.getBoundingClientRect(); return [(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height];};
+  c.addEventListener('pointerdown',e=>{ e.preventDefault(); c.setPointerCapture(e.pointerId); down=true; drew=false; last=pt(e); });
+  c.addEventListener('pointermove',e=>{ if(!down) return; e.preventDefault(); const p=pt(e);
+    ctx.strokeStyle='#0B1F3A'; ctx.lineWidth=2.6; ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.beginPath(); ctx.moveTo(last[0],last[1]); ctx.lineTo(p[0],p[1]); ctx.stroke(); last=p; drew=true; });
+  const end=()=>{ if(!down) return; down=false; if(!drew) return;
+    GC[id]={data:c.toDataURL('image/png'),at:new Date().toISOString()};
+    const w=document.getElementById(id+'When'); if(w) w.textContent='✓ Signed '+new Date(GC[id].at).toLocaleString([], {month:'numeric',day:'numeric',year:'2-digit',hour:'numeric',minute:'2-digit'});
+    queueSave(); };
+  c.addEventListener('pointerup',end); c.addEventListener('pointercancel',end); c.addEventListener('pointerleave',end);
+}
+document.addEventListener('DOMContentLoaded',()=>{ ['gcSig','gcPPSig'].forEach(id=>{gcWire(id);}); setTimeout(()=>{['gcSig','gcPPSig'].forEach(gcSize); gcRender();},50); });
+window.addEventListener('resize',()=>['gcSig','gcPPSig'].forEach(gcSize));
 /* MULTIPLE ROOMS: "+ Add" makes another Living Room / Dining Room / Bedroom / Bedding.
    Copies save by name (data-k), so they never shift the original form's saved fields. */
 const REP_NAMES={lr:'Living Room',dr:'Dining Room',br:'Bedroom',bd:'Bedding',pt:'Patio',en:'TV Stand / Entertainment',ho:'Home Office'};
@@ -1071,6 +1159,7 @@ function saveForm(){
   // Sectional sketch
   state.rooms={}; Object.keys(REP_TPL).forEach(k=>{state.rooms[k]=repCopies(k).map(x=>+x.dataset.n).filter(n=>n>1);});
   state.extra={}; document.querySelectorAll('.ovx[data-k]').forEach(el=>{state.extra[el.dataset.k]=el.type==='checkbox'?el.checked:el.value;});
+  state.gc=GC;
   state.mode=OV_MODE; state.guest=(document.getElementById('ovGuest')||{}).value||'';
   state.placed=placed.map(p=>({pid:p.piece.id,x:p.x,y:p.y,rot:p.rot,id:p.id}));
   state.nid=nid;
@@ -1134,6 +1223,8 @@ function restoreForm(){
     });
     // Added items (saved by name, so older drafts still line up)
     document.querySelectorAll('.ovx[data-k]').forEach(el=>{const v=(s.extra||{})[el.dataset.k]; if(el.type==='checkbox') el.checked=!!v; else el.value=v||'';});
+    // Guest signatures
+    if(s.gc){ ['gcSig','gcPPSig'].forEach(id=>{ if(s.gc[id]) GC[id]=s.gc[id]; }); }
     // Pre / post purchase
     const g=document.getElementById('ovGuest'); if(g) g.value=s.guest||'';
     setMode(s.mode || (fieldByPlaceholder('Ticket #') ? 'post' : 'pre'), true);
@@ -1170,6 +1261,8 @@ function newInspection(){
   const ss=document.getElementById('storeSelect'); if(ss){ss.value='';} const so=document.getElementById('storeOther'); if(so){so.value='';so.style.display='none';}
   document.querySelectorAll('input[type=checkbox]').forEach(el=>el.checked=false);
   clearRooms();
+  ['gcSig','gcPPSig'].forEach(id=>{GC[id]={data:'',at:''}; try{gcDraw(id);}catch(e){}});
+  setTimeout(gcRender,0);
   document.querySelectorAll('select.ovx').forEach(el=>el.value='');
   document.querySelectorAll('.pill.on').forEach(el=>el.classList.remove('on'));
   placed=[];selId=null;nid=0;render();
@@ -1275,6 +1368,13 @@ function buildRecordHTML(id){
   // Bake current values into the clone so it renders as a static record
   const liveIn=document.querySelectorAll('.doc input,.doc textarea,.doc select');
   const cloneIn=doc.querySelectorAll('input,textarea,select');
+  // Signatures: swap each pad for the signed image
+  doc.querySelectorAll('canvas.gc-canvas').forEach(c=>{
+    const st=GC[c.id]||{}; const d=document.createElement('div');
+    d.innerHTML=st.data?'<img src="'+st.data+'" alt="signature" style="display:block;width:100%">':'<div style="padding:24px;color:#802020;font-weight:700">Not signed</div>';
+    c.replaceWith(d.firstElementChild);
+  });
+  doc.querySelectorAll('.sec-btns,.gc-clr,.gc-x').forEach(x=>x.remove());
   liveIn.forEach((el,i)=>{
     const c=cloneIn[i]; if(!c) return;
     if(el.tagName==='SELECT'){ Array.from(c.options).forEach((o,j)=>{ if(j===el.selectedIndex) o.setAttribute('selected','selected'); else o.removeAttribute('selected'); }); if(el.selectedIndex>=c.options.length){const o=document.createElement('option');o.textContent=el.value;o.setAttribute('selected','selected');c.appendChild(o);} return; }
@@ -1307,6 +1407,9 @@ async function submitRecord(){
   const missing=[id.mode==='pre'?'guest':'order','store','date'].filter(k=>!id[k]).map(k=>({guest:'guest name',order:'ticket #'})[k]||k);
   if(missing.length && !confirm('Missing: '+missing.join(', ')+'.\nSubmit the record anyway?')) return;
   const prot=protectionStatus();
+  gcRender();
+  if(id.mode==='pre' && !GC.gcSig.data){ alert('The guest needs to sign in Guest Confirmation before a Pre-purchase verification can be submitted.'); document.getElementById('gcSec').scrollIntoView({behavior:'smooth',block:'start'}); return; }
+  if(id.mode==='pre' && prot.pp==='Declined' && !GC.gcPPSig.data){ alert('Protection was declined. The guest needs to initial the protection line in Guest Confirmation before submitting.'); document.getElementById('gcPP').scrollIntoView({behavior:'smooth',block:'center'}); return; }
   if(prot.state==='open' && !confirm('Protection was declined and no leader follow-up is marked.\nA leader should rebuild value before the guest leaves.\n\nSubmit anyway?')){ goProtection(); return; }
 
   const allChecks=Array.from(document.querySelectorAll('.doc input[type=checkbox]'));
@@ -1318,7 +1421,8 @@ async function submitRecord(){
     mode:id.mode, order:id.order, guestName:id.guest, date:id.date, store:id.store, associate:id.associate, manager:id.manager,
     protection:prot.pp, protectionFollowUp:prot.rb, protectionFlag:prot.state,   // '' | open | still | saved
     checksTotal:allChecks.length, checksConfirmed:allChecks.filter(c=>c.checked).length,
-    state:localStorage.getItem(SK)||'',   // raw form state for reload/audit
+    guestSigned:!!GC.gcSig.data, guestSignedAt:GC.gcSig.at||'', guestDeclinedPPInitialed:!!GC.gcPPSig.data,
+    state:(()=>{try{const o=JSON.parse(localStorage.getItem(SK)||'{}'); delete o.gc; return JSON.stringify(o);}catch(e){return '';}})(),   // raw form state (signatures live in the record itself)
     htmlRecord                             // human-readable frozen record
   };
   try{
@@ -1335,6 +1439,7 @@ async function submitRecord(){
 
 function queueSave(){
   clearTimeout(saveTimer);
+  clearTimeout(window._gcT); window._gcT=setTimeout(()=>{gcRender(); ['gcSig','gcPPSig'].forEach(gcSize);},250);
   saveTimer=setTimeout(saveForm,700);
 }
 

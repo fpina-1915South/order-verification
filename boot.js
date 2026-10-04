@@ -220,7 +220,7 @@
     return esc(r.protection || "");
   };
   const idCell = r => r.mode === "pre"
-    ? `<span style="font-size:10px;font-weight:800;color:#F68C2C">PRE</span> <b>${esc(r.guestName || "")}</b>`
+    ? `<span style="font-size:10px;font-weight:800;color:#F68C2C">PRE</span> <b>${esc(r.guestName || "")}</b>${r.guestSigned ? ' <span title="Guest signed" style="font-size:10px;font-weight:800;color:#2E9E6A">✓ SIGNED</span>' : ""}`
     : `${r.mode === "post" ? '<span style="font-size:10px;font-weight:800;color:#3F738D">POST</span> ' : ""}<b>${esc(r.order || "")}</b>`;
   function storeList(){ try { return Array.isArray(STORES) ? STORES : []; } catch(e){ return []; } }
   function fillStorePicker(){
