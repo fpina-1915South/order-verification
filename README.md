@@ -14,7 +14,7 @@ Order verification checklist for every store: Living Room, Sectional Layout, Din
 |---|---|
 | `index.html` | The app, plus the sign-in screen and Store Records |
 | `boot.js` | Sign-in, Submit and Store Records |
-| `sku.js` | The bed SKU book: every bed configuration and the SKUs it needs, built from Ashley's Casegoods price list (prices removed). Currently the 5/13/2026 list. |
+| `sku.js` | The SKU book: every bed and dining set configuration and the SKUs it needs, built from Ashley's Casegoods price list (prices removed). Currently the 5/13/2026 list. |
 | `config.js` | Firebase settings (same values as the Smart Scheduler), owner email and company domain |
 | `firestore.rules` | Who can read and write what. Covers the Smart Scheduler **and** Order Verification |
 

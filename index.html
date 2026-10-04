@@ -269,7 +269,7 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 <div id="ovBar" hidden><span id="ovWho"></span><button id="ovRecords" hidden>Store Records</button><button id="ovApprove" hidden>Approved list</button><button id="ovOut">Sign out</button></div>
 <div id="save-toast">✓ Saved</div>
 <div id="pdf-tip"></div>
-<datalist id="skuCols"></datalist>
+<datalist id="skuColsBr"></datalist><datalist id="skuColsDr"></datalist>
 
 <div class="doc">
 <!-- ══ LIVING ROOM ══ -->
@@ -288,6 +288,8 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
           <label class="ck"><input type="checkbox" class="ovx" data-k="lr_c_recline"><span>Reclining pieces have room to recline (wedge, armless or console between recliners)</span></label>
           <label class="ck"><input type="checkbox" class="ovx" data-k="lr_c_tables"><span>Coffee / end / sofa table qty confirmed</span></label>
           <label class="ck"><input type="checkbox" class="ovx" data-k="lr_c_accent"><span>Accent chair and color confirmed</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="lr_c_tv"><span>TV stand: TV size fits the stand and wall space measured</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="lr_c_tvparts"><span>Fireplace insert or wall unit pieces (piers, bridge, backer) confirmed if selected</span></label>
         </div>
         <div class="fld"><label>Color</label><input type="text" placeholder="Color name / SKU"></div>
         <div class="fld">
@@ -304,6 +306,8 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
           <div class="fld"><label># of Sofa / Console Tables</label><select class="ovsel ovx" data-k="lr_sofatbl" style="max-width:110px;"><option value="">0</option><option value="0">0</option><option value="1">1</option><option value="2">2</option></select></div>
           <div class="fld"><label># of Accent Chairs</label><select class="ovsel ovx" data-k="lr_accent" style="max-width:110px;"><option value="">0</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
         </div>
+        <div class="fld"><label>TV Stand / Entertainment</label><div class="pills"><button class="pill" onclick="pick(this,'lr_tv')">None</button><button class="pill" onclick="pick(this,'lr_tv')">TV Stand</button><button class="pill" onclick="pick(this,'lr_tv')">Entertainment Wall</button><button class="pill" onclick="pick(this,'lr_tv')">Fireplace Console</button><button class="pill" onclick="pick(this,'lr_tv')">Media Chest</button></div></div>
+        <div class="inline-fields"><div class="fld"><label>Guest TV Size</label><select class="ovsel ovx" data-k="lr_tvsize"><option value="">Select…</option><option value="32"">32"</option><option value="40"">40"</option><option value="43"">43"</option><option value="50"">50"</option><option value="55"">55"</option><option value="60"">60"</option><option value="65"">65"</option><option value="70"">70"</option><option value="75"">75"</option><option value="77"">77"</option><option value="83"">83"</option><option value="85"">85"</option><option value="98"">98"</option></select></div><div class="fld"><label>Stand Width</label><select class="ovsel ovx" data-k="lr_tvw"><option value="">Select…</option><option value="48"">48"</option><option value="54"">54"</option><option value="60"">60"</option><option value="64"">64"</option><option value="70"">70"</option><option value="72"">72"</option><option value="74"">74"</option><option value="80"">80"</option><option value="84"">84"</option><option value="90"+">90"+</option></select></div></div>
       </div>
       <div class="mb">
         <h3>Manager Checks</h3>
@@ -317,6 +321,8 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
           <label class="ck"><input type="checkbox" class="ovx" data-k="lr_m_recline"><span>Recliner clearance verified (no two reclining seats side by side without a spacer)</span></label>
           <label class="ck"><input type="checkbox" class="ovx" data-k="lr_m_tables"><span>Coffee / end / sofa table qty confirmed on invoice</span></label>
           <label class="ck"><input type="checkbox" class="ovx" data-k="lr_m_accent"><span>Accent chair SKU and color confirmed on invoice</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="lr_m_tv"><span>TV stand SKU, color and width confirmed on invoice</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="lr_m_tvparts"><span>Fireplace insert / piers / bridge / backer SKUs on ticket if selected</span></label>
         </div>
       </div>
     </div>
@@ -386,8 +392,15 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
             <label class="ck"><input type="checkbox" class="ovx" data-k="dr_m_chr"><span>Chair / stool height matches table height</span></label>
             <label class="ck"><input type="checkbox" class="ovx" data-k="dr_m_cnt"><span>Chair and arm chair count matches invoice</span></label>
             <label class="ck"><input type="checkbox" class="ovx" data-k="dr_m_bench"><span>Bench count matches invoice if applicable</span></label>
-            <label class="ck"><input type="checkbox" class="ovx" data-k="dr_m_case2"><span>Server / china / bar cabinet SKUs on invoice if selected</span></label>
+              <label class="ck"><input type="checkbox" class="ovx" data-k="dr_m_case2"><span>Server / china / bar cabinet SKUs on invoice if selected</span></label>
+            <label class="ck"><input type="checkbox" class="ovx" data-k="dr_m_sku"><span>Dining SKUs on ticket match the SKU book (table, base, chairs, qty)</span></label>
           </div>
+        </div>
+        <div class="fld sku-box" data-dept="dr">
+          <label>SKU Check <span class="sku-src"></span></label>
+          <input type="text" class="ovx sku-col" data-k="dr_skucol" list="skuColsDr" placeholder="Collection name or series # (e.g. Ralene or D594)" autocomplete="off">
+          <select class="ovsel ovx sku-bed" data-k="dr_skubed" style="margin-top:6px"><option value="">Pick the set…</option></select>
+          <div class="sku-list"></div>
         </div>
         <div class="fld"><label># of Side Chairs</label><select class="ovsel" style="max-width:110px;"><option value="">0</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option></select></div>
         <div class="fld"><label># of Arm Chairs</label><select class="ovsel" style="max-width:110px;"><option value="">0</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
@@ -440,9 +453,9 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
             <label class="ck"><input type="checkbox"><span>Rails</span></label>
           </div>
         </div>
-        <div class="fld sku-box">
+        <div class="fld sku-box" data-dept="br">
           <label>SKU Check <span class="sku-src"></span></label>
-          <input type="text" class="ovx sku-col" data-k="br_skucol" list="skuCols" placeholder="Collection name or series # (e.g. Trinell or B446)" autocomplete="off">
+          <input type="text" class="ovx sku-col" data-k="br_skucol" list="skuColsBr" placeholder="Collection name or series # (e.g. Trinell or B446)" autocomplete="off">
           <select class="ovsel ovx sku-bed" data-k="br_skubed" style="margin-top:6px"><option value="">Pick the bed…</option></select>
           <div class="sku-list"></div>
         </div>
@@ -553,35 +566,6 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
           <label class="ck"><input type="checkbox" class="ovx" data-k="pt_m2"><span>Material and color match invoice</span></label>
           <label class="ck"><input type="checkbox" class="ovx" data-k="pt_m3"><span>Delivery access and location noted on ticket</span></label>
           <label class="ck"><input type="checkbox" class="ovx" data-k="pt_m4"><span>Umbrella, base and fire pit SKUs on ticket</span></label>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ ENTERTAINMENT ══ -->
-<div class="sec" data-rep="en" data-n="1">
-  <div class="sec-hd"><h2>TV Stand / Entertainment</h2></div>
-  <div class="sec-bd">
-    <div class="g2">
-      <div class="gcol">
-        <div class="cks">
-          <label class="ck"><input type="checkbox" class="ovx" data-k="en_c0"><span>TV size fits the stand (width and weight)</span></label>
-          <label class="ck"><input type="checkbox" class="ovx" data-k="en_c1"><span>Wall space measured (width and height)</span></label>
-          <label class="ck"><input type="checkbox" class="ovx" data-k="en_c2"><span>Fireplace insert confirmed if fireplace console</span></label>
-          <label class="ck"><input type="checkbox" class="ovx" data-k="en_c3"><span>All wall unit pieces confirmed (piers, bridge, backer)</span></label>
-          <label class="ck"><input type="checkbox" class="ovx" data-k="en_c4"><span>Color / finish confirmed</span></label>
-        </div>
-        <div class="fld"><label>Type</label><div class="pills"><button class="pill" onclick="pick(this,'en_type')">TV Stand</button><button class="pill" onclick="pick(this,'en_type')">Entertainment Wall</button><button class="pill" onclick="pick(this,'en_type')">Fireplace Console</button><button class="pill" onclick="pick(this,'en_type')">Media Chest</button></div></div><div class="inline-fields"><div class="fld"><label>Guest TV Size</label><select class="ovsel ovx" data-k="en_tv"><option value="">Select…</option><option value="32"">32"</option><option value="40"">40"</option><option value="43"">43"</option><option value="50"">50"</option><option value="55"">55"</option><option value="60"">60"</option><option value="65"">65"</option><option value="70"">70"</option><option value="75"">75"</option><option value="77"">77"</option><option value="83"">83"</option><option value="85"">85"</option><option value="98"">98"</option></select></div><div class="fld"><label>Stand Width</label><select class="ovsel ovx" data-k="en_w"><option value="">Select…</option><option value="48"">48"</option><option value="54"">54"</option><option value="60"">60"</option><option value="64"">64"</option><option value="70"">70"</option><option value="72"">72"</option><option value="74"">74"</option><option value="80"">80"</option><option value="84"">84"</option><option value="90"+">90"+</option></select></div></div>
-      </div>
-      <div class="mb">
-        <h3>Manager Checks</h3>
-        <div class="cks">
-          <label class="ck"><input type="checkbox" class="ovx" data-k="en_m0"><span>TV size and stand width confirmed</span></label>
-          <label class="ck"><input type="checkbox" class="ovx" data-k="en_m1"><span>Measurements verified by manager</span></label>
-          <label class="ck"><input type="checkbox" class="ovx" data-k="en_m2"><span>Fireplace insert SKU on ticket if selected</span></label>
-          <label class="ck"><input type="checkbox" class="ovx" data-k="en_m3"><span>Piers, bridge and backer SKUs on ticket</span></label>
-          <label class="ck"><input type="checkbox" class="ovx" data-k="en_m4"><span>Color matches invoice</span></label>
         </div>
       </div>
     </div>
@@ -754,14 +738,16 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 });
 /* SKU CHECK: pick the collection and bed; the app lists every SKU that has to be on the ticket. */
-const SKUB=window.SKU_BOOK||{cols:[],desc:{}};
-(function(){ const dl=document.getElementById('skuCols'); if(dl) dl.innerHTML=SKUB.cols.map(c=>'<option value="'+esc(c[0]+' '+c[1])+'">').join(''); })();
-function skuFindCol(v){
+const SKUB=window.SKU_BOOK||{beds:[],din:[],desc:{}};
+const skuSrc=box=>(box&&box.dataset.dept==='dr')?(SKUB.din||[]):(SKUB.beds||SKUB.cols||[]);
+(function(){ [['skuColsBr',SKUB.beds||SKUB.cols||[]],['skuColsDr',SKUB.din||[]]].forEach(([id,l])=>{ const dl=document.getElementById(id); if(dl) dl.innerHTML=l.map(c=>'<option value="'+esc(c[0]+' '+c[1])+'">').join(''); }); })();
+function skuFindCol(v,box){
+  const L=skuSrc(box);
   v=String(v||'').trim().toLowerCase(); if(!v) return null;
-  return SKUB.cols.find(c=>(c[0]+' '+c[1]).toLowerCase()===v)
-      || SKUB.cols.find(c=>c[0].toLowerCase()===v || c[0].toLowerCase().replace(/^pc/,'')===v.replace(/^pc/,''))
-      || SKUB.cols.find(c=>c[1].toLowerCase()===v)
-      || SKUB.cols.find(c=>c[1].toLowerCase().startsWith(v)&&v.length>=4) || null;
+  return L.find(c=>(c[0]+' '+c[1]).toLowerCase()===v)
+      || L.find(c=>c[0].toLowerCase()===v || c[0].toLowerCase().replace(/^pc/,'')===v.replace(/^pc/,''))
+      || L.find(c=>c[1].toLowerCase()===v)
+      || L.find(c=>c[1].toLowerCase().startsWith(v)&&v.length>=4) || null;
 }
 const skuSize=d=>/cal(ifornia)?\.?\s*king/i.test(d)?'Cal King':/\bking\b/i.test(d)?'King':/queen/i.test(d)?'Queen':/\bfull\b/i.test(d)?'Full':/twin/i.test(d)?'Twin':'';
 const SKU_STYLE={Storage:/storage/i,Sleigh:/sleigh/i,Poster:/poster/i,Upholstered:/uph/i,Platform:/platform/i,Panel:/panel/i};
@@ -769,19 +755,20 @@ function skuPill(sec,g){ const b=Array.from(sec.querySelectorAll('.pill.on')).fi
 function skuRender(box, saved){
   const sec=box.closest('.sec'); const inp=box.querySelector('.sku-col'), sel=box.querySelector('.sku-bed'), list=box.querySelector('.sku-list');
   const src=box.querySelector('.sku-src'); if(src) src.textContent=SKUB.date?'(SKU book '+SKUB.date+')':'';
-  const col=skuFindCol(inp.value);
+  const col=skuFindCol(inp.value,box); const DR=box.dataset.dept==='dr', noun=DR?'set':'bed';
   const want=saved?(saved[sel.dataset.k]||''):sel.value;
   const prev={}; list.querySelectorAll('input[type=checkbox]').forEach(c=>prev[c.dataset.k]=c.checked);
-  const size=sec?skuPill(sec,'br_sz'):'', style=sec?skuPill(sec,'br_fr'):'';
-  if(!col){ sel.innerHTML='<option value="">'+(inp.value.trim()?'No collection found. Check the name or series #':'Pick the bed…')+'</option>'; list.innerHTML=''; return; }
+  const size=(sec&&!DR)?skuPill(sec,'br_sz'):'', style=(sec&&!DR)?skuPill(sec,'br_fr'):'', ht=(sec&&DR)?skuPill(sec,'dr_ht'):'';
+  if(!col){ sel.innerHTML='<option value="">'+(inp.value.trim()?'No collection found. Check the name or series #':'Pick the '+noun+'…')+'</option>'; list.innerHTML=''; return; }
   let beds=col[2].slice();
   const sized=size?beds.filter(b=>skuSize(b[0])===size):[];
   if(sized.length) beds=sized;
   if(style&&SKU_STYLE[style]) beds.sort((a,b)=>(SKU_STYLE[style].test(b[0])?1:0)-(SKU_STYLE[style].test(a[0])?1:0));
-  sel.innerHTML='<option value="">Pick the bed ('+beds.length+(sized.length?' '+size:'')+' options)…</option>'+beds.map(b=>'<option value="'+esc(b[0])+'">'+esc(b[0])+'</option>').join('');
+  if(ht){ const re=/^Counter/.test(ht)?/counter|cntr/i:/^Bar/.test(ht)?/\bbar\b|pub/i:null; if(re) beds.sort((a,b)=>(re.test(b[0])?1:0)-(re.test(a[0])?1:0)); }
+  sel.innerHTML='<option value="">Pick the '+noun+' ('+beds.length+(sized.length?' '+size:'')+' options)…</option>'+beds.map(b=>'<option value="'+esc(b[0])+'">'+esc(b[0])+'</option>').join('');
   if(want && beds.some(b=>b[0]===want)) sel.value=want;
   const bed=col[2].find(b=>b[0]===sel.value);
-  if(!bed){ list.innerHTML='<div class="sku-note">'+esc(col[0]+' '+col[1])+': pick the bed to see the SKUs.</div>'; return; }
+  if(!bed){ list.innerHTML='<div class="sku-note">'+esc(col[0]+' '+col[1])+': pick the '+noun+' to see the SKUs.</div>'; return; }
   const key=sel.dataset.k;
   list.innerHTML='<div class="sku-note">Every SKU below must be on the ticket. Check each one off.</div>'+bed[1].map(([sku,m])=>{
     const k=key+'__'+sku, on=saved?!!saved[k]:!!prev[k];
@@ -807,8 +794,8 @@ function gcSummaryRows(){
     const title=(sec.querySelector('.sec-hd h2')||{}).textContent||'';
     const parts=[];
     sec.querySelectorAll('.fld').forEach(f=>{
-      if(f.classList.contains('sku-box')){ const c=skuFindCol(f.querySelector('.sku-col').value), bd=f.querySelector('.sku-bed').value;
-        if(c&&bd){ const bed=c[2].find(b=>b[0]===bd); parts.push('Bed: '+c[1]+' '+bd+(bed?' ('+bed[1].map(x=>x[0]+(x[1]>1?' ×'+x[1]:'')).join(', ')+')':'')); } return; }
+      if(f.classList.contains('sku-box')){ const c=skuFindCol(f.querySelector('.sku-col').value,f), bd=f.querySelector('.sku-bed').value;
+        if(c&&bd){ const bed=c[2].find(b=>b[0]===bd); parts.push((f.dataset.dept==='dr'?'Dining set: ':'Bed: ')+c[1]+' '+bd+(bed?' ('+bed[1].map(x=>x[0]+(x[1]>1?' ×'+x[1]:'')).join(', ')+')':'')); } return; }
       const lab=((f.querySelector(':scope > label')||{}).textContent||'').trim();
       const on=f.querySelector('.pill.on'); if(on) parts.push(lab+': '+on.textContent.trim());
       const sl=f.querySelector(':scope > select'); if(sl&&sl.value&&sl.value!=='0') parts.push(lab.replace(/^# of /i,'')+': '+sl.value);
@@ -930,7 +917,7 @@ function pick(btn,grp){
   queueSave();
   if(grp==='pp'||grp==='pp_rb') updateProtectionFlag();
   if(/^br_(fr|sz)/.test(grp) && typeof buildPal==='function' && roomType(CUR_ROOM)==='br') buildPal();
-  if(/^br_(fr|sz)/.test(grp)){ const sb=btn.closest('.sec')&&btn.closest('.sec').querySelector('.sku-box'); if(sb) skuRender(sb); }
+  if(/^(br_(fr|sz)|dr_ht)/.test(grp)){ const sb=btn.closest('.sec')&&btn.closest('.sec').querySelector('.sku-box'); if(sb) skuRender(sb); }
 }
 /* Protection declined → flag for the leader (header chip + panel in the section) */
 function pillVal(grp){
