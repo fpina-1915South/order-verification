@@ -14,6 +14,7 @@ Order verification checklist for every store: Living Room, Sectional Layout, Din
 |---|---|
 | `index.html` | The app, plus the sign-in screen and Store Records |
 | `boot.js` | Sign-in, Submit and Store Records |
+| `sku.js` | The bed SKU book: every bed configuration and the SKUs it needs, built from Ashley's Casegoods price list (prices removed). Currently the 5/13/2026 list. |
 | `config.js` | Firebase settings (same values as the Smart Scheduler), owner email and company domain |
 | `firestore.rules` | Who can read and write what. Covers the Smart Scheduler **and** Order Verification |
 
@@ -56,3 +57,6 @@ Edit `viewers` in `config.js` and commit. (Any signed-in leader can already look
 ## Making changes later
 - **With Claude:** ask for the change, then re-upload the changed file to the repository.
 - **By hand:** edit the file on github.com and commit. GitHub Pages updates in about a minute.
+
+## Updating the SKU book
+After each market (winter and summer), get the new Ashley Casegoods price list PDF (Kris Johnson keeps it current) and ask Claude to regenerate `sku.js` from it. Only bed configurations and SKU descriptions go into the app. Prices are never included.

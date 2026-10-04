@@ -137,6 +137,16 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 .sketch-hd button:hover{background:rgba(255,255,255,.14);}
 .pal-strip{background:#EBF2FA;border-bottom:1px solid #C8D8E8;flex-shrink:0;}
 .pal-inner{display:flex;flex-wrap:wrap;gap:4px;padding:5px 8px;}
+.sku-src{font-weight:500;text-transform:none;letter-spacing:0;color:#94A3B8;}
+.sku-box input.sku-col{width:100%;box-sizing:border-box;}
+.sku-box select.sku-bed{width:100%;}
+.sku-list{margin-top:8px;}
+.sku-list .sku-note{font-size:11px;color:#595959;margin-bottom:4px;}
+.sku-list .sku-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid #DBECF1;border-radius:7px;margin-bottom:4px;background:#F8FBFD;font-size:13px;}
+.sku-list .sku-row b{color:#003B4A;min-width:92px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;}
+.sku-list .sku-row.ok{background:#EAF7F0;border-color:#9ED9BC;}
+.sku-list .sku-stat{font-size:12px;font-weight:700;margin-top:4px;color:#C2410C;}
+.sku-list .sku-stat.ok{color:#2E9E6A;}
 .room-tabs{display:flex;gap:6px;padding:7px 8px 2px;flex-wrap:wrap;}
 .room-tabs button{border:1.5px solid #3F738D;background:#fff;color:#003B4A;border-radius:16px;padding:5px 14px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;}
 .room-tabs button.on{background:#003B4A;border-color:#003B4A;color:#fff;}
@@ -236,6 +246,7 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
   .sketch-wrap{height:300px;}
 }
 </style>
+<script src="sku.js"></script>
 </head>
 <body>
 
@@ -258,6 +269,7 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 <div id="ovBar" hidden><span id="ovWho"></span><button id="ovRecords" hidden>Store Records</button><button id="ovApprove" hidden>Approved list</button><button id="ovOut">Sign out</button></div>
 <div id="save-toast">✓ Saved</div>
 <div id="pdf-tip"></div>
+<datalist id="skuCols"></datalist>
 
 <div class="doc">
 <!-- ══ LIVING ROOM ══ -->
@@ -428,6 +440,12 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
             <label class="ck"><input type="checkbox"><span>Rails</span></label>
           </div>
         </div>
+        <div class="fld sku-box">
+          <label>SKU Check <span class="sku-src"></span></label>
+          <input type="text" class="ovx sku-col" data-k="br_skucol" list="skuCols" placeholder="Collection name or series # (e.g. Trinell or B446)" autocomplete="off">
+          <select class="ovsel ovx sku-bed" data-k="br_skubed" style="margin-top:6px"><option value="">Pick the bed…</option></select>
+          <div class="sku-list"></div>
+        </div>
       </div>
       <div class="mb">
         <h3>Manager Checks</h3>
@@ -437,6 +455,7 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
           <label class="ck"><input type="checkbox"><span>Dresser SKU confirmed on invoice</span></label>
           <label class="ck"><input type="checkbox" class="ovx" data-k="br_m_chest"><span>Chest / bench SKU confirmed on invoice if selected</span></label>
           <label class="ck"><input type="checkbox"><span>Frame type matches selection</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="br_m_sku"><span>Bed SKUs on ticket match the SKU book (every piece)</span></label>
           <label class="ck"><input type="checkbox"><span>HB / FB / Rails confirmed on invoice</span></label>
           <label class="ck"><input type="checkbox"><span>King bed — 2x Twin XL foundations confirmed</span></label>
           <label class="ck"><input type="checkbox"><span>Platform/Storage — NO foundations on ticket</span></label>
@@ -724,6 +743,7 @@ function clearSection(sec){
   sec.querySelectorAll('input[type=date],input[type=datetime-local]').forEach(el=>el.value='');
   sec.querySelectorAll('.pill.on').forEach(el=>el.classList.remove('on'));
   sec.querySelectorAll('canvas.gc-canvas').forEach(c=>{GC[c.id]={data:'',at:''}; gcDraw(c.id);});
+  sec.querySelectorAll('.sku-box').forEach(b=>skuRender(b));
   if(typeof updateProtectionFlag==='function') updateProtectionFlag();
   queueSave();
 }
@@ -733,6 +753,51 @@ document.addEventListener('DOMContentLoaded',()=>{
     addSecButtons(sec);
   });
 });
+/* SKU CHECK: pick the collection and bed; the app lists every SKU that has to be on the ticket. */
+const SKUB=window.SKU_BOOK||{cols:[],desc:{}};
+(function(){ const dl=document.getElementById('skuCols'); if(dl) dl.innerHTML=SKUB.cols.map(c=>'<option value="'+esc(c[0]+' '+c[1])+'">').join(''); })();
+function skuFindCol(v){
+  v=String(v||'').trim().toLowerCase(); if(!v) return null;
+  return SKUB.cols.find(c=>(c[0]+' '+c[1]).toLowerCase()===v)
+      || SKUB.cols.find(c=>c[0].toLowerCase()===v || c[0].toLowerCase().replace(/^pc/,'')===v.replace(/^pc/,''))
+      || SKUB.cols.find(c=>c[1].toLowerCase()===v)
+      || SKUB.cols.find(c=>c[1].toLowerCase().startsWith(v)&&v.length>=4) || null;
+}
+const skuSize=d=>/cal(ifornia)?\.?\s*king/i.test(d)?'Cal King':/\bking\b/i.test(d)?'King':/queen/i.test(d)?'Queen':/\bfull\b/i.test(d)?'Full':/twin/i.test(d)?'Twin':'';
+const SKU_STYLE={Storage:/storage/i,Sleigh:/sleigh/i,Poster:/poster/i,Upholstered:/uph/i,Platform:/platform/i,Panel:/panel/i};
+function skuPill(sec,g){ const b=Array.from(sec.querySelectorAll('.pill.on')).find(x=>new RegExp("pick\\(this,'"+g+"(__\\d+)?'\\)").test(x.getAttribute('onclick')||'')); return b?b.textContent.trim():''; }
+function skuRender(box, saved){
+  const sec=box.closest('.sec'); const inp=box.querySelector('.sku-col'), sel=box.querySelector('.sku-bed'), list=box.querySelector('.sku-list');
+  const src=box.querySelector('.sku-src'); if(src) src.textContent=SKUB.date?'(SKU book '+SKUB.date+')':'';
+  const col=skuFindCol(inp.value);
+  const want=saved?(saved[sel.dataset.k]||''):sel.value;
+  const prev={}; list.querySelectorAll('input[type=checkbox]').forEach(c=>prev[c.dataset.k]=c.checked);
+  const size=sec?skuPill(sec,'br_sz'):'', style=sec?skuPill(sec,'br_fr'):'';
+  if(!col){ sel.innerHTML='<option value="">'+(inp.value.trim()?'No collection found. Check the name or series #':'Pick the bed…')+'</option>'; list.innerHTML=''; return; }
+  let beds=col[2].slice();
+  const sized=size?beds.filter(b=>skuSize(b[0])===size):[];
+  if(sized.length) beds=sized;
+  if(style&&SKU_STYLE[style]) beds.sort((a,b)=>(SKU_STYLE[style].test(b[0])?1:0)-(SKU_STYLE[style].test(a[0])?1:0));
+  sel.innerHTML='<option value="">Pick the bed ('+beds.length+(sized.length?' '+size:'')+' options)…</option>'+beds.map(b=>'<option value="'+esc(b[0])+'">'+esc(b[0])+'</option>').join('');
+  if(want && beds.some(b=>b[0]===want)) sel.value=want;
+  const bed=col[2].find(b=>b[0]===sel.value);
+  if(!bed){ list.innerHTML='<div class="sku-note">'+esc(col[0]+' '+col[1])+': pick the bed to see the SKUs.</div>'; return; }
+  const key=sel.dataset.k;
+  list.innerHTML='<div class="sku-note">Every SKU below must be on the ticket. Check each one off.</div>'+bed[1].map(([sku,m])=>{
+    const k=key+'__'+sku, on=saved?!!saved[k]:!!prev[k];
+    return '<label class="sku-row'+(on?' ok':'')+'"><input type="checkbox" class="ovx" data-k="'+esc(k)+'"'+(on?' checked':'')+'><b>'+esc(sku)+'</b><span>'+esc(SKUB.desc[sku]||'')+(m>1?' <b style="min-width:0">× '+m+'</b>':'')+'</span></label>';
+  }).join('')+'<div class="sku-stat"></div>';
+  skuStat(box);
+}
+function skuStat(box){
+  const cks=box.querySelectorAll('.sku-list input[type=checkbox]'); const st=box.querySelector('.sku-stat'); if(!st) return;
+  const n=Array.from(cks).filter(c=>c.checked).length;
+  cks.forEach(c=>c.closest('.sku-row').classList.toggle('ok',c.checked));
+  st.className='sku-stat'+(n===cks.length?' ok':''); st.textContent=n===cks.length?'✓ All '+n+' SKUs confirmed on the ticket':n+' of '+cks.length+' SKUs confirmed on the ticket';
+}
+document.addEventListener('input',e=>{ const b=e.target.closest&&e.target.closest('.sku-box'); if(b&&e.target.classList.contains('sku-col')){ skuRender(b); queueSave(); } });
+document.addEventListener('change',e=>{ const b=e.target.closest&&e.target.closest('.sku-box'); if(!b) return;
+  if(e.target.classList.contains('sku-bed')){ skuRender(b); queueSave(); } else if(e.target.type==='checkbox'){ skuStat(b); queueSave(); } });
 /* GUEST CONFIRMATION: live summary + finger signatures */
 const GC={gcSig:{data:'',at:''},gcPPSig:{data:'',at:''}};
 function gcSummaryRows(){
@@ -742,6 +807,8 @@ function gcSummaryRows(){
     const title=(sec.querySelector('.sec-hd h2')||{}).textContent||'';
     const parts=[];
     sec.querySelectorAll('.fld').forEach(f=>{
+      if(f.classList.contains('sku-box')){ const c=skuFindCol(f.querySelector('.sku-col').value), bd=f.querySelector('.sku-bed').value;
+        if(c&&bd){ const bed=c[2].find(b=>b[0]===bd); parts.push('Bed: '+c[1]+' '+bd+(bed?' ('+bed[1].map(x=>x[0]+(x[1]>1?' ×'+x[1]:'')).join(', ')+')':'')); } return; }
       const lab=((f.querySelector(':scope > label')||{}).textContent||'').trim();
       const on=f.querySelector('.pill.on'); if(on) parts.push(lab+': '+on.textContent.trim());
       const sl=f.querySelector(':scope > select'); if(sl&&sl.value&&sl.value!=='0') parts.push(lab.replace(/^# of /i,'')+': '+sl.value);
@@ -863,6 +930,7 @@ function pick(btn,grp){
   queueSave();
   if(grp==='pp'||grp==='pp_rb') updateProtectionFlag();
   if(/^br_(fr|sz)/.test(grp) && typeof buildPal==='function' && roomType(CUR_ROOM)==='br') buildPal();
+  if(/^br_(fr|sz)/.test(grp)){ const sb=btn.closest('.sec')&&btn.closest('.sec').querySelector('.sku-box'); if(sb) skuRender(sb); }
 }
 /* Protection declined → flag for the leader (header chip + panel in the section) */
 function pillVal(grp){
@@ -1398,6 +1466,8 @@ function restoreForm(){
     document.querySelectorAll('.ovx[data-k]').forEach(el=>{const v=(s.extra||{})[el.dataset.k]; if(el.type==='checkbox') el.checked=!!v; else el.value=v||'';});
     // Guest signatures
     if(s.gc){ ['gcSig','gcPPSig'].forEach(id=>{ if(s.gc[id]) GC[id]=s.gc[id]; }); }
+    // SKU check lists (built from the restored collection + bed)
+    document.querySelectorAll('.sku-box').forEach(b=>skuRender(b, s.extra||{}));
     // Pre / post purchase
     const g=document.getElementById('ovGuest'); if(g) g.value=s.guest||'';
     setMode(s.mode || (fieldByPlaceholder('Ticket #') ? 'post' : 'pre'), true);
