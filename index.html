@@ -135,6 +135,13 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 .room-tabs{display:flex;gap:6px;padding:7px 8px 2px;flex-wrap:wrap;}
 .room-tabs button{border:1.5px solid #3F738D;background:#fff;color:#003B4A;border-radius:16px;padding:5px 14px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;}
 .room-tabs button.on{background:#003B4A;border-color:#003B4A;color:#fff;}
+.room-tabs .rx{margin-left:6px;font-size:11px;opacity:.75;}
+.room-tabs .rx:hover{opacity:1;}
+.room-add{position:relative;display:inline-block;}
+.room-tabs button.add{border-style:dashed;border-color:#F68C2C;color:#C2410C;background:#FFF7ED;}
+.room-menu{display:none;position:absolute;top:110%;left:0;z-index:30;background:#fff;border:1px solid #CBD5E1;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.15);padding:6px;flex-direction:column;gap:4px;min-width:150px;}
+.room-menu.show{display:flex;}
+.room-menu button{border-radius:8px!important;text-align:left;}
 .room-tabs button .rc{display:inline-block;min-width:16px;margin-left:5px;padding:0 4px;border-radius:8px;background:#F68C2C;color:#fff;font-size:10px;}
 .bed-opts{display:none;gap:12px;align-items:center;padding:4px 8px 0;flex-wrap:wrap;font-size:11px;font-weight:700;color:#003B4A;}
 .bed-opts.show{display:flex;}
@@ -310,9 +317,10 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
     <div class="pal-strip">
       <div class="room-tabs" id="roomTabs"></div>
       <div class="bed-opts" id="bedOpts">
-        <label>Bed size <select id="bedSize" onchange="buildPal()"><option>Twin</option><option>Full</option><option selected>Queen</option><option>King</option><option>Cal King</option></select></label>
-        <label>Storage drawers <select id="bedDrw" onchange="buildPal()"><option value="none">None</option><option value="L">Left side</option><option value="R">Right side</option><option value="LR">Both sides</option><option value="F">Footboard</option></select></label>
-        <span class="bed-hint">Pick size and drawers, then drag the bed in.</span>
+        <label>Bed style <select id="bedStyle" onchange="buildPal(true)"><option>Panel</option><option>Sleigh</option><option>Poster</option><option>Upholstered</option><option>Platform</option><option>Storage</option></select></label>
+        <label>Bed size <select id="bedSize" onchange="buildPal(true)"><option>Twin</option><option>Full</option><option selected>Queen</option><option>King</option><option>Cal King</option></select></label>
+        <label>Storage drawers <select id="bedDrw" onchange="buildPal(true)"><option value="none">None</option><option value="L">Left side</option><option value="R">Right side</option><option value="LR">Both sides</option><option value="F">Footboard</option></select></label>
+        <span class="bed-hint">Pick style, size and drawers, then drag the bed in.</span>
       </div>
       <div class="pal-inner" id="pal"></div>
     </div>
@@ -754,7 +762,7 @@ function layoutSVG(list){
 }
 function layoutRows(){
   return ROOMS.map(([k,n])=>{
-    const list=placed.filter(p=>p.piece.room===k); if(!list.length) return null;
+    const list=placed.filter(p=>p.rk===k); if(!list.length) return null;
     const cnt={}; list.forEach(p=>{cnt[p.piece.label]=(cnt[p.piece.label]||0)+1;});
     const txt=Object.entries(cnt).map(([l,c])=>(c>1?c+' × ':'')+l).join(', ');
     return '<div class="gc-lay"><b>Room Layout, '+esc(n)+':</b> '+esc(txt)+layoutSVG(list)+'</div>';
@@ -842,6 +850,7 @@ function pick(btn,grp){
   btn.classList.add('on');
   queueSave();
   if(grp==='pp'||grp==='pp_rb') updateProtectionFlag();
+  if(/^br_(fr|sz)/.test(grp) && typeof buildPal==='function' && roomType(CUR_ROOM)==='br') buildPal();
 }
 /* Protection declined → flag for the leader (header chip + panel in the section) */
 function pillVal(grp){
@@ -994,10 +1003,18 @@ const dchair=(w,h,arms)=>[R(0,0,w,h,BG,2),R(0,0,w,6,WDK),arms?R(0,0,4,h,WDK):'',
 const stool=(d)=>`<circle cx="${d/2}" cy="${d/2}" r="${d/2-1}" fill="${CU}" stroke="${BLU}" stroke-width="1.5"/>`;
 const reclS=(w,h)=>sofa(w,h,true,true)+`<text x="${w/2}" y="${h-6}" text-anchor="middle" font-size="7" fill="${BLU}" font-family="sans-serif">⇣ recline</text>`;
 const BEDS={Twin:[52,100],Full:[72,100],Queen:[80,106],King:[102,106],'Cal King':[96,112]};
-function bedDraw(w,h,drw){
-  const hb=10, g=[R(0,0,w,h,'#EEF3F7',2), R(0,0,w,hb,BLU,2), R(4,hb+2,w-8,h-hb-8,'#FFFFFF',3)];
+function bedDraw(w,h,drw,style){
+  style=style||'Panel';
+  const hb=style==='Platform'?7:10, g=[R(0,0,w,h,'#EEF3F7',2)];
+  if(style==='Sleigh'){ g.push(`<path d="M0,${hb+4} Q0,0 8,0 H${w-8} Q${w},0 ${w},${hb+4} Z" fill="${BLU}"/>`); }
+  else if(style==='Upholstered'){ g.push(R(-2,0,w+4,hb+2,'#5B7FA3',5)); for(let i=8;i<w-4;i+=10) g.push(`<circle cx="${i}" cy="${(hb+2)/2}" r="1.3" fill="#DBECF1"/>`); }
+  else g.push(R(0,0,w,hb,BLU,style==='Platform'?1:2));
+  g.push(R(4,hb+2,w-8,h-hb-8,'#FFFFFF',3));
   const pw=(w-14)/2; g.push(R(6,hb+4,pw,14,BG,5), R(8+pw,hb+4,pw,14,BG,5));
-  g.push(R(4,hb+24,w-8,h-hb-30,CU,3), R(0,h-4,w,4,BLU,1));
+  g.push(R(4,hb+24,w-8,h-hb-30,CU,3));
+  if(style==='Sleigh') g.push(`<path d="M0,${h-8} Q0,${h} 8,${h} H${w-8} Q${w},${h} ${w},${h-8} Z" fill="${BLU}"/>`);
+  else if(style!=='Platform') g.push(R(0,h-4,w,4,BLU,1));
+  if(style==='Poster') [[3,3],[w-3,3],[3,h-3],[w-3,h-3]].forEach(([x,y])=>g.push(`<circle cx="${x}" cy="${y}" r="4.5" fill="${WDK}" stroke="${BLU}" stroke-width="1"/>`));
   const dr=(x,y,ww,hh)=>R(x,y,ww,hh,WD,1)+R(x+ww/2-3,y+hh/2-1,6,2,WDK,1);
   if(/L/.test(drw)){ g.push(dr(-1,hb+30,6,26), dr(-1,hb+60,6,26)); }
   if(/R/.test(drw)){ g.push(dr(w-5,hb+30,6,26), dr(w-5,hb+60,6,26)); }
@@ -1008,9 +1025,9 @@ function bedDraw(w,h,drw){
 const DRW_TXT={none:'',L:'L drawers',R:'R drawers',LR:'2-side drawers',F:'foot drawers'};
 function getPiece(id){
   const hit=PIECES.find(x=>x.id===id); if(hit) return hit;
-  const m=/^bed:([^:]+):(\w+)$/.exec(id||''); if(!m||!BEDS[m[1]]) return null;
-  const [w,h]=BEDS[m[1]], drw=m[2];
-  const p={id, room:'br', label:m[1]+' Bed'+(drw!=='none'?' ('+DRW_TXT[drw]+')':''), w, h, draw:()=>bedDraw(w,h,drw)};
+  const m=/^bed:([^:]+):(\w+)(?::(\w+))?$/.exec(id||''); if(!m||!BEDS[m[1]]) return null;
+  const [w,h]=BEDS[m[1]], drw=m[2], st=m[3]||'Panel';
+  const p={id, room:'br', label:m[1]+' '+st+' Bed'+(drw!=='none'?' ('+DRW_TXT[drw]+')':''), w, h, draw:()=>bedDraw(w,h,drw,st)};
   PIECES.push(p); return p;
 }
 const PIECES=[
@@ -1061,8 +1078,28 @@ const PIECES=[
   {id:'server',  room:'dr', label:'Server',       w:90,h:26, draw:()=>drawers(90,26,3,1)},
 ];
 PIECES.forEach(p=>{ if(!p.room) p.room='lr'; });
-const ROOMS=[['lr','Living Room'],['br','Bedroom'],['dr','Dining Room']];
+/* Layout rooms: the three base rooms plus any the associate adds (Bedroom 2, Living Room 2...).
+   Each entry: [key, name, type]. Pieces remember which room (rk) they were placed in. */
+const BASE_ROOMS=[['lr','Living Room','lr'],['br','Bedroom','br'],['dr','Dining Room','dr']];
+const ROOM_TYPES={lr:'Living Room',br:'Bedroom',dr:'Dining Room'};
+let ROOMS=BASE_ROOMS.map(r=>r.slice());
 let CUR_ROOM='lr';
+const roomType=k=>(ROOMS.find(r=>r[0]===k)||[0,0,'lr'])[2];
+function addLayRoom(t){
+  const n=ROOMS.filter(r=>r[2]===t).length+1;
+  let k=t+n; while(ROOMS.some(r=>r[0]===k)) k+='x';
+  ROOMS.push([k,ROOM_TYPES[t]+' '+n,t]);
+  document.getElementById('roomAddMenu').classList.remove('show');
+  setRoom(k);
+}
+function delLayRoom(k,ev){
+  if(ev) ev.stopPropagation();
+  const r=ROOMS.find(x=>x[0]===k); if(!r||BASE_ROOMS.some(b=>b[0]===k)) return;
+  if(!confirm('Remove '+r[1]+' and its pieces?')) return;
+  ROOMS=ROOMS.filter(x=>x[0]!==k); placed=placed.filter(p=>p.rk!==k);
+  if(CUR_ROOM===k) CUR_ROOM=r[2];
+  buildPal(); render(); queueSave();
+}
 
 const SNAP=20,SC=1.4;
 let placed=[],selId=null,ghost=null,dragD=null,nid=0;
@@ -1091,15 +1128,32 @@ function coords(e){
 
 function buildTabs(){
   const t=document.getElementById('roomTabs'); if(!t) return;
-  t.innerHTML=ROOMS.map(([k,n])=>{const c=placed.filter(p=>p.piece.room===k).length; return `<button type="button" class="${k===CUR_ROOM?'on':''}" onclick="setRoom('${k}')">${n}${c?`<span class="rc">${c}</span>`:''}</button>`;}).join('');
-  document.getElementById('bedOpts').classList.toggle('show',CUR_ROOM==='br');
+  t.innerHTML=ROOMS.map(([k,n])=>{const c=placed.filter(p=>p.rk===k).length; const extra=!BASE_ROOMS.some(b=>b[0]===k);
+      return `<button type="button" class="${k===CUR_ROOM?'on':''}" onclick="setRoom('${k}')">${n}${c?`<span class="rc">${c}</span>`:''}${extra?`<span class="rx" onclick="delLayRoom('${k}',event)" title="Remove room">✕</span>`:''}</button>`;}).join('')
+    + `<span class="room-add"><button type="button" class="add" onclick="document.getElementById('roomAddMenu').classList.toggle('show')">+ Add room</button><span class="room-menu" id="roomAddMenu"><button type="button" onclick="addLayRoom('lr')">Living Room</button><button type="button" onclick="addLayRoom('br')">Bedroom</button><button type="button" onclick="addLayRoom('dr')">Dining Room</button></span></span>`;
+  document.getElementById('bedOpts').classList.toggle('show',roomType(CUR_ROOM)==='br');
 }
 function setRoom(k){ CUR_ROOM=k; selId=null; buildPal(); render(); queueSave(); }
-function buildPal(){
+/* Bedroom layout follows the Bedroom section: Frame Type -> bed style, Bed Size -> bed size.
+   Layout "Bedroom" reads Bedroom 1, "Bedroom 2" reads Bedroom 2, and so on. */
+function syncBedFromForm(){
+  if(roomType(CUR_ROOM)!=='br') return;
+  const n=CUR_ROOM==='br'?1:(parseInt(CUR_ROOM.replace(/\D/g,''))||1);
+  const sec=document.querySelector('.sec[data-rep="br"][data-n="'+n+'"]')||document.querySelector('.sec[data-rep="br"]'); if(!sec) return;
+  const val=g=>{const b=Array.from(sec.querySelectorAll('.pill.on')).find(x=>new RegExp("pick\\(this,'"+g+"(__\\d+)?'\\)").test(x.getAttribute('onclick')||'')); return b?b.textContent.trim():'';};
+  const fr=val('br_fr'), sz=val('br_sz');
+  const st=document.getElementById('bedStyle'), si=document.getElementById('bedSize'), dw=document.getElementById('bedDrw');
+  if(fr && Array.from(st.options).some(o=>o.value===fr)) st.value=fr;
+  if(sz && Array.from(si.options).some(o=>o.value===sz)) si.value=sz;
+  if(fr==='Storage'){ if(dw.value==='none') dw.value='LR'; } else if(fr) dw.value='none';
+  const h=document.querySelector('.bed-hint'); if(h) h.textContent=(fr||sz)?'Matched to '+(n>1?'Bedroom '+n:'Bedroom')+' section. Change here if needed, then drag the bed in.':'Pick style, size and drawers, then drag the bed in.';
+}
+function buildPal(fromSelect){
   const pal=document.getElementById('pal');
+  if(!fromSelect) syncBedFromForm();
   pal.innerHTML='';
-  const list=PIECES.filter(p=>p.room===CUR_ROOM && !/^bed:/.test(p.id));
-  if(CUR_ROOM==='br') list.unshift(getPiece('bed:'+document.getElementById('bedSize').value+':'+document.getElementById('bedDrw').value));
+  const list=PIECES.filter(p=>p.room===roomType(CUR_ROOM) && !/^bed:/.test(p.id));
+  if(roomType(CUR_ROOM)==='br') list.unshift(getPiece('bed:'+document.getElementById('bedSize').value+':'+document.getElementById('bedDrw').value+':'+document.getElementById('bedStyle').value));
   buildTabs();
   list.forEach(p=>{
     const d=document.createElement('div');d.className='pt';
@@ -1111,7 +1165,7 @@ function buildPal(){
 }
 
 function updCount(){
-  const n=placed.filter(p=>p.piece.room===CUR_ROOM).length;
+  const n=placed.filter(p=>p.rk===CUR_ROOM).length;
   document.getElementById('pcount').textContent=n?`${n} piece${n!==1?'s':''} placed · tap to select · ↻ rotate · ✕ remove`:'0 pieces placed';
   document.getElementById('hint').style.opacity=n?'0':'1';
 }
@@ -1119,7 +1173,7 @@ function updCount(){
 function render(){
   document.querySelectorAll('.pw').forEach(e=>e.remove());
   buildTabs();
-  placed.filter(p=>p.piece.room===CUR_ROOM).forEach(p=>{
+  placed.filter(p=>p.rk===CUR_ROOM).forEach(p=>{
     const d=document.createElement('div');
     d.className='pw'+(p.id===selId?' sel':'');
     d.dataset.pid=p.id;
@@ -1202,7 +1256,7 @@ function onUp(e){
     const {x,y}=coords(e);
     const cx=x-rect.left,cy=y-rect.top;
     if(cx>0&&cy>0&&cx<rect.width&&cy<rect.height){
-      const np={id:nid++,piece:dragD.piece,x:Math.max(0,snap(cx-dragD.piece.w*SC/2)),y:Math.max(0,snap(cy-dragD.piece.h*SC/2)),rot:0};
+      const np={id:nid++,piece:dragD.piece,x:Math.max(0,snap(cx-dragD.piece.w*SC/2)),y:Math.max(0,snap(cy-dragD.piece.h*SC/2)),rot:0,rk:CUR_ROOM};
       placed.push(np);selId=np.id;render();queueSave();
     }
     if(ghost){ghost.remove();ghost=null;}
@@ -1212,7 +1266,7 @@ function onUp(e){
 
 function rotP(pid){const p=placed.find(x=>x.id===pid);if(p){p.rot=(p.rot+90)%360;render();queueSave();}}
 function delP(pid){placed=placed.filter(x=>x.id!==pid);if(selId===pid)selId=null;render();queueSave();}
-function clearCvs(){placed=placed.filter(p=>p.piece.room!==CUR_ROOM);selId=null;render();queueSave();}
+function clearCvs(){placed=placed.filter(p=>p.rk!==CUR_ROOM);selId=null;render();queueSave();}
 
 function onCvsDeselect(e){
   if(e.target===document.getElementById('cvs')||e.target.closest('.cvs-hint')){selId=null;render();}
@@ -1265,8 +1319,8 @@ function saveForm(){
   state.extra={}; document.querySelectorAll('.ovx[data-k]').forEach(el=>{state.extra[el.dataset.k]=el.type==='checkbox'?el.checked:el.value;});
   state.gc=GC;
   state.mode=OV_MODE; state.guest=(document.getElementById('ovGuest')||{}).value||'';
-  state.placed=placed.map(p=>({pid:p.piece.id,x:p.x,y:p.y,rot:p.rot,id:p.id}));
-  state.nid=nid; state.layRoom=CUR_ROOM;
+  state.placed=placed.map(p=>({pid:p.piece.id,x:p.x,y:p.y,rot:p.rot,id:p.id,rk:p.rk}));
+  state.nid=nid; state.layRoom=CUR_ROOM; state.layRooms=ROOMS.filter(r=>!BASE_ROOMS.some(b=>b[0]===r[0]));
   try{
     localStorage.setItem(SK,JSON.stringify(state));
     showToast();
@@ -1333,12 +1387,14 @@ function restoreForm(){
     const g=document.getElementById('ovGuest'); if(g) g.value=s.guest||'';
     setMode(s.mode || (fieldByPlaceholder('Ticket #') ? 'post' : 'pre'), true);
     // Room layout
-    if(s.layRoom && ROOMS.some(r=>r[0]===s.layRoom)){ CUR_ROOM=s.layRoom; buildPal(); }
+    ROOMS=BASE_ROOMS.map(r=>r.slice()).concat((s.layRooms||[]).filter(r=>Array.isArray(r)&&ROOM_TYPES[r[2]]));
+    if(s.layRoom && ROOMS.some(r=>r[0]===s.layRoom)){ CUR_ROOM=s.layRoom; }
+    buildPal();
     if(s.placed&&s.placed.length){
       nid=s.nid||0;
       placed=s.placed.map(p=>{
         const piece=getPiece(p.pid);
-        return piece?{id:p.id,piece,x:p.x,y:p.y,rot:p.rot}:null;
+        return piece?{id:p.id,piece,x:p.x,y:p.y,rot:p.rot,rk:(p.rk&&ROOMS.some(r=>r[0]===p.rk))?p.rk:piece.room}:null;
       }).filter(Boolean);
       render();
     }
@@ -1370,7 +1426,7 @@ function newInspection(){
   setTimeout(gcRender,0);
   document.querySelectorAll('select.ovx').forEach(el=>el.value='');
   document.querySelectorAll('.pill.on').forEach(el=>el.classList.remove('on'));
-  placed=[];selId=null;nid=0;CUR_ROOM='lr';buildPal();render();
+  placed=[];selId=null;nid=0;CUR_ROOM='lr';ROOMS=BASE_ROOMS.map(r=>r.slice());buildPal();render();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
