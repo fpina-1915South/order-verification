@@ -37,6 +37,11 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 .sec-hd{background:#1E3A5F;padding:7px 14px;}
 .sec-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .sec-clear{border:1px solid rgba(255,255,255,.45);background:transparent;color:#fff;font:inherit;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:3px 12px;border-radius:5px;cursor:pointer;}
+.sec-na .sec-bd{display:none;}
+.sec-na .sec-hd{background:#94A3B8!important;}
+.sec-na .sec-hd h2::after{content:"  ·  N/A, not on this order";font-weight:600;letter-spacing:.03em;}
+.sec-na .sec-add,.sec-na .sec-btns .sec-clear:not(.sec-na-btn):not(.sec-rm){display:none;}
+.sec-na-btn{background:rgba(255,255,255,.12)!important;}
 .sec-btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
 .sec-add{background:#F68C2C;border-color:#F68C2C;}
 .sec-rm{border-color:#F3B4B4;color:#FFD6D6;}
@@ -733,7 +738,7 @@ const GC={gcSig:{data:'',at:''},gcPPSig:{data:'',at:''}};
 function gcSummaryRows(){
   const rows=[];
   document.querySelectorAll('.doc .sec').forEach(sec=>{
-    if(sec.id==='gcSec'||!sec.querySelector('.sec-bd')||/Sign-Off/i.test(sec.textContent.slice(0,60))) return;
+    if(sec.id==='gcSec'||sec.classList.contains('sec-na')||!sec.querySelector('.sec-bd')||/Sign-Off/i.test(sec.textContent.slice(0,60))) return;
     const title=(sec.querySelector('.sec-hd h2')||{}).textContent||'';
     const parts=[];
     sec.querySelectorAll('.fld').forEach(f=>{
@@ -829,6 +834,12 @@ function addRoom(key, quiet){
   if(!quiet){ queueSave(); sec.scrollIntoView({behavior:'smooth',block:'start'}); }
   return sec;
 }
+function toggleNA(sec, on, quiet){
+  const v=(on===undefined)?!sec.classList.contains('sec-na'):on;
+  sec.classList.toggle('sec-na',v);
+  const b=sec.querySelector('.sec-na-btn'); if(b) b.textContent=v?'Undo N/A':'N/A';
+  if(!quiet) queueSave();
+}
 function removeRoom(sec){
   if(!confirm('Remove '+sec.querySelector('.sec-hd h2').textContent+'?')) return;
   sec.remove(); queueSave();
@@ -839,6 +850,7 @@ function addSecButtons(sec){
   hd.querySelectorAll('.sec-btns').forEach(x=>x.remove());
   const box=document.createElement('div'); box.className='sec-btns';
   const key=sec.dataset.rep;
+  if(key){ const na=document.createElement('button'); na.type='button'; na.className='sec-clear sec-na-btn'; na.textContent=sec.classList.contains('sec-na')?'Undo N/A':'N/A'; na.title='Not on this order: collapse this section'; na.onclick=()=>toggleNA(sec); box.appendChild(na); }
   if(key){ const a=document.createElement('button'); a.type='button'; a.className='sec-clear sec-add'; a.textContent=REP_ADD[key]; a.onclick=()=>addRoom(key); box.appendChild(a); }
   const c=document.createElement('button'); c.type='button'; c.className='sec-clear'; c.textContent='Clear'; c.onclick=()=>clearSection(sec); box.appendChild(c);
   if(sec.classList.contains('rep-copy')){ const r=document.createElement('button'); r.type='button'; r.className='sec-clear sec-rm'; r.textContent='Remove'; r.onclick=()=>removeRoom(sec); box.appendChild(r); }
@@ -1316,6 +1328,7 @@ function saveForm(){
   state.dates={}; DATE_IDS.forEach(id=>{const el=document.getElementById(id); if(el) state.dates[id]=el.value;});
   // Sectional sketch
   state.rooms={}; Object.keys(REP_TPL).forEach(k=>{state.rooms[k]=repCopies(k).map(x=>+x.dataset.n).filter(n=>n>1);});
+  state.na=Array.from(document.querySelectorAll('.sec.sec-na[data-rep]')).map(x=>x.dataset.rep+':'+x.dataset.n);
   state.extra={}; document.querySelectorAll('.ovx[data-k]').forEach(el=>{state.extra[el.dataset.k]=el.type==='checkbox'?el.checked:el.value;});
   state.gc=GC;
   state.mode=OV_MODE; state.guest=(document.getElementById('ovGuest')||{}).value||'';
@@ -1379,6 +1392,8 @@ function restoreForm(){
         if(m&&m[1]===grp&&pill.textContent.trim()===txt) pill.classList.add('on');
       });
     });
+    // Sections marked N/A
+    document.querySelectorAll('.sec[data-rep]').forEach(x=>toggleNA(x,(s.na||[]).includes(x.dataset.rep+':'+x.dataset.n),true));
     // Added items (saved by name, so older drafts still line up)
     document.querySelectorAll('.ovx[data-k]').forEach(el=>{const v=(s.extra||{})[el.dataset.k]; if(el.type==='checkbox') el.checked=!!v; else el.value=v||'';});
     // Guest signatures
@@ -1422,6 +1437,7 @@ function newInspection(){
   const ss=document.getElementById('storeSelect'); if(ss){ss.value='';} const so=document.getElementById('storeOther'); if(so){so.value='';so.style.display='none';}
   document.querySelectorAll('input[type=checkbox]').forEach(el=>el.checked=false);
   clearRooms();
+  document.querySelectorAll('.sec[data-rep]').forEach(x=>toggleNA(x,false,true));
   ['gcSig','gcPPSig'].forEach(id=>{GC[id]={data:'',at:''}; try{gcDraw(id);}catch(e){}});
   setTimeout(gcRender,0);
   document.querySelectorAll('select.ovx').forEach(el=>el.value='');
