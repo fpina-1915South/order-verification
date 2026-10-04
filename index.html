@@ -131,7 +131,7 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 .sketch-hd button{padding:3px 9px;font-size:10px;border:1px solid rgba(255,255,255,.3);background:transparent;color:white;border-radius:5px;cursor:pointer;font-family:inherit;}
 .sketch-hd button:hover{background:rgba(255,255,255,.14);}
 .pal-strip{background:#EBF2FA;border-bottom:1px solid #C8D8E8;flex-shrink:0;}
-.pal-inner{display:flex;gap:4px;padding:5px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.pal-inner{display:flex;flex-wrap:wrap;gap:4px;padding:5px 8px;}
 .pal-inner::-webkit-scrollbar{height:3px;}
 .pal-inner::-webkit-scrollbar-thumb{background:#C8D8E8;border-radius:2px;}
 .pt{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 5px 3px;background:white;border:1px solid #C8D8E6;border-radius:6px;cursor:grab;touch-action:none;user-select:none;flex-shrink:0;transition:border-color .1s;}
@@ -173,13 +173,17 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 /* ── PDF INSTRUCTION TOAST ── */
 #pdf-tip{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#1E293B;color:white;font-size:12px;font-weight:500;padding:10px 18px;border-radius:8px;text-align:center;line-height:1.6;opacity:0;transition:opacity .25s;pointer-events:none;z-index:9999;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.3);}
 #pdf-tip.show{opacity:1;}
+#ovSaved{position:fixed;top:60px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:10px;background:#003B4A;color:#fff;font-size:13px;font-weight:600;padding:10px 12px 10px 16px;border-radius:10px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.3);max-width:94vw;flex-wrap:wrap;}
+#ovSaved.show{display:flex;}
+#ovSaved button{border:none;border-radius:7px;font:inherit;font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer;background:#F68C2C;color:#fff;}
+#ovSaved button+button{background:transparent;padding:6px 8px;}
 
 /* ── SAVED TOAST ── */
 #save-toast{position:fixed;bottom:20px;right:20px;background:#1E3A5F;color:white;font-size:11px;font-weight:600;padding:7px 14px;border-radius:8px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999;box-shadow:0 2px 8px rgba(0,0,0,.25);}
 #save-toast.show{opacity:1;}
 
 @media print{
-  .new-btn,.pdf-btn,.submit-btn,#save-toast,#pdf-tip{display:none!important;}
+  .new-btn,.pdf-btn,.submit-btn,#save-toast,#pdf-tip,#ovSaved{display:none!important;}
 }
 @media print{
   #hdr input{color:white!important;}
@@ -232,6 +236,9 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
           <label class="ck"><input type="checkbox"><span>Color confirmed and noted below</span></label>
           <label class="ck"><input type="checkbox"><span>Configuration matches customer selection (LAF / RAF)</span></label>
           <label class="ck"><input type="checkbox"><span>Sectional layout sketched and verified below</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="lr_c_recline"><span>Reclining pieces have room to recline (wedge, armless or console between recliners)</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="lr_c_tables"><span>Coffee / end / sofa table qty confirmed</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="lr_c_accent"><span>Accent chair and color confirmed</span></label>
         </div>
         <div class="fld"><label>Color</label><input type="text" placeholder="Color name / SKU"></div>
         <div class="fld">
@@ -257,6 +264,8 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
           <label class="ck"><input type="checkbox"><span>Config (LAF / RAF) verified on ticket</span></label>
           <label class="ck"><input type="checkbox"><span>Measurements verified by manager</span></label>
           <label class="ck"><input type="checkbox"><span>Sofa sleeper clearance confirmed</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="lr_m_layout"><span>Sectional layout verified: every piece connects and matches the sketch</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="lr_m_recline"><span>Recliner clearance verified (no two reclining seats side by side without a spacer)</span></label>
           <label class="ck"><input type="checkbox" class="ovx" data-k="lr_m_tables"><span>Coffee / end / sofa table qty confirmed on invoice</span></label>
           <label class="ck"><input type="checkbox" class="ovx" data-k="lr_m_accent"><span>Accent chair SKU and color confirmed on invoice</span></label>
         </div>
@@ -293,6 +302,7 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
           <label class="ck"><input type="checkbox"><span>Table height verified on invoice</span></label>
           <label class="ck"><input type="checkbox"><span>Chair count confirmed on invoice</span></label>
           <label class="ck"><input type="checkbox"><span>Bench count confirmed if applicable</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="dr_c_chr"><span>Chair / stool height matches table height</span></label>
           <label class="ck"><input type="checkbox" class="ovx" data-k="dr_m_case"><span>Server / buffet / china cabinet confirmed on invoice if selected</span></label>
         </div>
         <div class="fld">
@@ -313,6 +323,16 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
         </div>
       </div>
       <div class="gcol">
+        <div class="mb" style="margin-bottom:10px">
+          <h3>Manager Checks</h3>
+          <div class="cks">
+            <label class="ck"><input type="checkbox" class="ovx" data-k="dr_m_ht"><span>Table height matches selection on invoice</span></label>
+            <label class="ck"><input type="checkbox" class="ovx" data-k="dr_m_chr"><span>Chair / stool height matches table height</span></label>
+            <label class="ck"><input type="checkbox" class="ovx" data-k="dr_m_cnt"><span>Chair and arm chair count matches invoice</span></label>
+            <label class="ck"><input type="checkbox" class="ovx" data-k="dr_m_bench"><span>Bench count matches invoice if applicable</span></label>
+            <label class="ck"><input type="checkbox" class="ovx" data-k="dr_m_case2"><span>Server / china / bar cabinet SKUs on invoice if selected</span></label>
+          </div>
+        </div>
         <div class="fld"><label># of Side Chairs</label><select class="ovsel" style="max-width:110px;"><option value="">0</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option></select></div>
         <div class="fld"><label># of Arm Chairs</label><select class="ovsel" style="max-width:110px;"><option value="">0</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div>
 <div class="fld"><label>Dining Storage</label><div class="ck-row"><label class="ck"><input type="checkbox" class="ovx" data-k="dr_server"><span>Server / Buffet</span></label><label class="ck"><input type="checkbox" class="ovx" data-k="dr_china"><span>China Cabinet / Hutch</span></label><label class="ck"><input type="checkbox" class="ovx" data-k="dr_bar"><span>Bar Cabinet</span></label></div></div>
@@ -447,6 +467,95 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
   </div>
 </div>
 
+<!-- ══ PATIO ══ -->
+<div class="sec" data-rep="pt" data-n="1">
+  <div class="sec-hd"><h2>Patio</h2></div>
+  <div class="sec-bd">
+    <div class="g2">
+      <div class="gcol">
+        <div class="cks">
+          <label class="ck"><input type="checkbox" class="ovx" data-k="pt_c0"><span>Piece count confirmed (chairs, loveseat, sofa, tables)</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="pt_c1"><span>Cushions confirmed: included or sold separately</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="pt_c2"><span>Frame material and color confirmed</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="pt_c3"><span>Delivery spot measured (gate, stairs, patio access)</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="pt_c4"><span>Umbrella / base / fire pit parts confirmed if selected</span></label>
+        </div>
+        <div class="fld"><label>Set Type</label><div class="pills"><button class="pill" onclick="pick(this,'pt_type')">Seating</button><button class="pill" onclick="pick(this,'pt_type')">Dining</button><button class="pill" onclick="pick(this,'pt_type')">Fire Pit / Table</button><button class="pill" onclick="pick(this,'pt_type')">Accent</button></div></div><div class="fld"><label>Frame Material</label><div class="pills"><button class="pill" onclick="pick(this,'pt_mat')">Aluminum</button><button class="pill" onclick="pick(this,'pt_mat')">Wicker / Resin</button><button class="pill" onclick="pick(this,'pt_mat')">Wood</button><button class="pill" onclick="pick(this,'pt_mat')">Steel</button></div></div><div class="inline-fields"><div class="fld"><label># of Chairs</label><select class="ovsel ovx" data-k="pt_chairs" style="max-width:110px;"><option value="">0</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option></select></div><div class="fld"><label># of Sofas / Loveseats</label><select class="ovsel ovx" data-k="pt_sofa" style="max-width:110px;"><option value="">0</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div><div class="fld"><label># of Tables</label><select class="ovsel ovx" data-k="pt_tables" style="max-width:110px;"><option value="">0</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div></div>
+      </div>
+      <div class="mb">
+        <h3>Manager Checks</h3>
+        <div class="cks">
+          <label class="ck"><input type="checkbox" class="ovx" data-k="pt_m0"><span>Piece count matches invoice</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="pt_m1"><span>Cushion SKUs on ticket if sold separately</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="pt_m2"><span>Material and color match invoice</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="pt_m3"><span>Delivery access and location noted on ticket</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="pt_m4"><span>Umbrella, base and fire pit SKUs on ticket</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ENTERTAINMENT ══ -->
+<div class="sec" data-rep="en" data-n="1">
+  <div class="sec-hd"><h2>TV Stand / Entertainment</h2></div>
+  <div class="sec-bd">
+    <div class="g2">
+      <div class="gcol">
+        <div class="cks">
+          <label class="ck"><input type="checkbox" class="ovx" data-k="en_c0"><span>TV size fits the stand (width and weight)</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="en_c1"><span>Wall space measured (width and height)</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="en_c2"><span>Fireplace insert confirmed if fireplace console</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="en_c3"><span>All wall unit pieces confirmed (piers, bridge, backer)</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="en_c4"><span>Color / finish confirmed</span></label>
+        </div>
+        <div class="fld"><label>Type</label><div class="pills"><button class="pill" onclick="pick(this,'en_type')">TV Stand</button><button class="pill" onclick="pick(this,'en_type')">Entertainment Wall</button><button class="pill" onclick="pick(this,'en_type')">Fireplace Console</button><button class="pill" onclick="pick(this,'en_type')">Media Chest</button></div></div><div class="inline-fields"><div class="fld"><label>Guest TV Size</label><select class="ovsel ovx" data-k="en_tv"><option value="">Select…</option><option value="32"">32"</option><option value="40"">40"</option><option value="43"">43"</option><option value="50"">50"</option><option value="55"">55"</option><option value="60"">60"</option><option value="65"">65"</option><option value="70"">70"</option><option value="75"">75"</option><option value="77"">77"</option><option value="83"">83"</option><option value="85"">85"</option><option value="98"">98"</option></select></div><div class="fld"><label>Stand Width</label><select class="ovsel ovx" data-k="en_w"><option value="">Select…</option><option value="48"">48"</option><option value="54"">54"</option><option value="60"">60"</option><option value="64"">64"</option><option value="70"">70"</option><option value="72"">72"</option><option value="74"">74"</option><option value="80"">80"</option><option value="84"">84"</option><option value="90"+">90"+</option></select></div></div>
+      </div>
+      <div class="mb">
+        <h3>Manager Checks</h3>
+        <div class="cks">
+          <label class="ck"><input type="checkbox" class="ovx" data-k="en_m0"><span>TV size and stand width confirmed</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="en_m1"><span>Measurements verified by manager</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="en_m2"><span>Fireplace insert SKU on ticket if selected</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="en_m3"><span>Piers, bridge and backer SKUs on ticket</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="en_m4"><span>Color matches invoice</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOME OFFICE ══ -->
+<div class="sec" data-rep="ho" data-n="1">
+  <div class="sec-hd"><h2>Home Office</h2></div>
+  <div class="sec-bd">
+    <div class="g2">
+      <div class="gcol">
+        <div class="cks">
+          <label class="ck"><input type="checkbox" class="ovx" data-k="ho_c0"><span>Desk type confirmed</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="ho_c1"><span>L-desk return side confirmed (LAF / RAF)</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="ho_c2"><span>Hutch confirmed if selected</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="ho_c3"><span>Bookcase / file cabinet count confirmed</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="ho_c4"><span>Office chair confirmed if selected</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="ho_c5"><span>Room measured, desk fits</span></label>
+        </div>
+        <div class="fld"><label>Desk Type</label><div class="pills"><button class="pill" onclick="pick(this,'ho_type')">Desk</button><button class="pill" onclick="pick(this,'ho_type')">L-Desk</button><button class="pill" onclick="pick(this,'ho_type')">Writing Desk</button><button class="pill" onclick="pick(this,'ho_type')">Lift-Top / Standing</button></div></div><div class="fld"><label>L-Desk Return</label><div class="pills"><button class="pill" onclick="pick(this,'ho_ret')">LAF</button><button class="pill" onclick="pick(this,'ho_ret')">RAF</button><button class="pill" onclick="pick(this,'ho_ret')">N/A</button></div></div><div class="inline-fields"><div class="fld"><label># of Bookcases</label><select class="ovsel ovx" data-k="ho_book" style="max-width:110px;"><option value="">0</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div><div class="fld"><label># of File Cabinets</label><select class="ovsel ovx" data-k="ho_file" style="max-width:110px;"><option value="">0</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div><div class="fld"><label># of Office Chairs</label><select class="ovsel ovx" data-k="ho_chair" style="max-width:110px;"><option value="">0</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div></div>
+      </div>
+      <div class="mb">
+        <h3>Manager Checks</h3>
+        <div class="cks">
+          <label class="ck"><input type="checkbox" class="ovx" data-k="ho_m0"><span>Desk SKU matches selection</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="ho_m1"><span>Return side verified on ticket</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="ho_m2"><span>Hutch SKU on ticket if selected</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="ho_m3"><span>Bookcase and file cabinet qty on invoice</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="ho_m4"><span>Office chair SKU and color on invoice</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="ho_m5"><span>Measurements verified by manager</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ PROTECTION / DELIVERY / FINANCE ══ -->
 <div class="sec">
   <div class="sec-hd ora"><h2>Protection Plan · Delivery · Finance</h2></div>
@@ -564,8 +673,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 /* MULTIPLE ROOMS: "+ Add" makes another Living Room / Dining Room / Bedroom / Bedding.
    Copies save by name (data-k), so they never shift the original form's saved fields. */
-const REP_NAMES={lr:'Living Room',dr:'Dining Room',br:'Bedroom',bd:'Bedding'};
-const REP_ADD={lr:'+ Add Living Room',dr:'+ Add Dining Room',br:'+ Add Bedroom',bd:'+ Add Mattress'};
+const REP_NAMES={lr:'Living Room',dr:'Dining Room',br:'Bedroom',bd:'Bedding',pt:'Patio',en:'TV Stand / Entertainment',ho:'Home Office'};
+const REP_ADD={lr:'+ Add Living Room',dr:'+ Add Dining Room',br:'+ Add Bedroom',bd:'+ Add Mattress',pt:'+ Add Patio',en:'+ Add TV Stand',ho:'+ Add Office'};
 const REP_TPL={};
 document.querySelectorAll('.sec[data-rep]').forEach(sec=>{REP_TPL[sec.dataset.rep]=sec.outerHTML;});
 function repCopies(key){return Array.from(document.querySelectorAll('.sec[data-rep="'+key+'"]'));}
@@ -1179,6 +1288,16 @@ function buildRecordHTML(id){
        + doc.outerHTML + `</div></body></html>`;
 }
 
+function savedToast(){
+  let t=document.getElementById('ovSaved');
+  if(!t){ t=document.createElement('div'); t.id='ovSaved';
+    t.innerHTML='<span>✓ Saved. Leaders can view it in Store Records.</span><button type="button">View in Store Records</button><button type="button" aria-label="Close">✕</button>';
+    document.body.appendChild(t);
+    const [v,x]=t.querySelectorAll('button');
+    v.onclick=()=>{t.classList.remove('show'); const r=document.getElementById('ovRecords'); if(r) r.click();};
+    x.onclick=()=>t.classList.remove('show'); }
+  t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),12000);
+}
 function tip(msg){const t=document.getElementById('pdf-tip');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),Math.max(3000,msg.length*60));}
 
 async function submitRecord(){
@@ -1205,7 +1324,7 @@ async function submitRecord(){
   try{
     btn.disabled=true; btn.textContent='Submitting…';
     await window.OV_SUBMIT(record);
-    tip('✓ Record saved: '+filename);
+    savedToast();
     btn.textContent='✓ Submitted';
     setTimeout(()=>{btn.disabled=false;btn.textContent='✓ Submit Record';},2500);
   }catch(e){
