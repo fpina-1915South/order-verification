@@ -132,6 +132,16 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 .sketch-hd button:hover{background:rgba(255,255,255,.14);}
 .pal-strip{background:#EBF2FA;border-bottom:1px solid #C8D8E8;flex-shrink:0;}
 .pal-inner{display:flex;flex-wrap:wrap;gap:4px;padding:5px 8px;}
+.room-tabs{display:flex;gap:6px;padding:7px 8px 2px;flex-wrap:wrap;}
+.room-tabs button{border:1.5px solid #3F738D;background:#fff;color:#003B4A;border-radius:16px;padding:5px 14px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;}
+.room-tabs button.on{background:#003B4A;border-color:#003B4A;color:#fff;}
+.room-tabs button .rc{display:inline-block;min-width:16px;margin-left:5px;padding:0 4px;border-radius:8px;background:#F68C2C;color:#fff;font-size:10px;}
+.bed-opts{display:none;gap:12px;align-items:center;padding:4px 8px 0;flex-wrap:wrap;font-size:11px;font-weight:700;color:#003B4A;}
+.bed-opts.show{display:flex;}
+.bed-opts select{font:inherit;font-size:12px;padding:3px 6px;border:1px solid #CBD5E1;border-radius:6px;margin-left:4px;}
+.bed-hint{font-weight:500;color:#595959;}
+.gc-lay{margin-top:6px;}
+.gc-lay > svg{display:block;max-width:100%;height:auto;background:#F8FBFD;border:1px solid #DBECF1;border-radius:6px;margin-top:4px;}
 .pal-inner::-webkit-scrollbar{height:3px;}
 .pal-inner::-webkit-scrollbar-thumb{background:#C8D8E8;border-radius:2px;}
 .pt{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 5px 3px;background:white;border:1px solid #C8D8E6;border-radius:6px;cursor:grab;touch-action:none;user-select:none;flex-shrink:0;transition:border-color .1s;}
@@ -250,7 +260,7 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
           <label class="ck"><input type="checkbox"><span>Sofa Sleeper: doorways, elevators, stairs, hallways min. 32"</span></label>
           <label class="ck"><input type="checkbox"><span>Color confirmed and noted below</span></label>
           <label class="ck"><input type="checkbox"><span>Configuration matches customer selection (LAF / RAF)</span></label>
-          <label class="ck"><input type="checkbox"><span>Sectional layout sketched and verified below</span></label>
+          <label class="ck"><input type="checkbox"><span>Room layout sketched and verified below</span></label>
           <label class="ck"><input type="checkbox" class="ovx" data-k="lr_c_recline"><span>Reclining pieces have room to recline (wedge, armless or console between recliners)</span></label>
           <label class="ck"><input type="checkbox" class="ovx" data-k="lr_c_tables"><span>Coffee / end / sofa table qty confirmed</span></label>
           <label class="ck"><input type="checkbox" class="ovx" data-k="lr_c_accent"><span>Accent chair and color confirmed</span></label>
@@ -279,7 +289,7 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
           <label class="ck"><input type="checkbox"><span>Config (LAF / RAF) verified on ticket</span></label>
           <label class="ck"><input type="checkbox"><span>Measurements verified by manager</span></label>
           <label class="ck"><input type="checkbox"><span>Sofa sleeper clearance confirmed</span></label>
-          <label class="ck"><input type="checkbox" class="ovx" data-k="lr_m_layout"><span>Sectional layout verified: every piece connects and matches the sketch</span></label>
+          <label class="ck"><input type="checkbox" class="ovx" data-k="lr_m_layout"><span>Room layout verified: every piece connects and matches the sketch</span></label>
           <label class="ck"><input type="checkbox" class="ovx" data-k="lr_m_recline"><span>Recliner clearance verified (no two reclining seats side by side without a spacer)</span></label>
           <label class="ck"><input type="checkbox" class="ovx" data-k="lr_m_tables"><span>Coffee / end / sofa table qty confirmed on invoice</span></label>
           <label class="ck"><input type="checkbox" class="ovx" data-k="lr_m_accent"><span>Accent chair SKU and color confirmed on invoice</span></label>
@@ -291,17 +301,23 @@ body{font-family:-apple-system,system-ui,'Helvetica Neue',sans-serif;background:
 
 <!-- ══ SECTIONAL LAYOUT ══ -->
 <div class="sec">
-  <div class="sec-hd"><h2>Sectional Layout</h2></div>
+  <div class="sec-hd"><h2>Room Layout</h2></div>
   <div class="sketch-wrap" style="height:660px;border-radius:0;border:none;">
     <div class="sketch-hd">
-      <h3>Drag &amp; drop pieces to build the layout — tap placed piece to rotate or delete</h3>
-      <button onclick="clearCvs()">Clear canvas</button>
+      <h3>Pick a room, then drag pieces in. Tap a piece to rotate or delete.</h3>
+      <button onclick="clearCvs()">Clear this room</button>
     </div>
     <div class="pal-strip">
+      <div class="room-tabs" id="roomTabs"></div>
+      <div class="bed-opts" id="bedOpts">
+        <label>Bed size <select id="bedSize" onchange="buildPal()"><option>Twin</option><option>Full</option><option selected>Queen</option><option>King</option><option>Cal King</option></select></label>
+        <label>Storage drawers <select id="bedDrw" onchange="buildPal()"><option value="none">None</option><option value="L">Left side</option><option value="R">Right side</option><option value="LR">Both sides</option><option value="F">Footboard</option></select></label>
+        <span class="bed-hint">Pick size and drawers, then drag the bed in.</span>
+      </div>
       <div class="pal-inner" id="pal"></div>
     </div>
     <div class="sketch-cvs" id="cvs">
-      <div class="cvs-hint" id="hint"><p>Drag pieces from the library above onto the canvas<br>to map out the customer's sectional configuration</p></div>
+      <div class="cvs-hint" id="hint"><p>Drag pieces from the library above onto the canvas<br>to map out the guest's room</p></div>
     </div>
     <div class="sketch-foot" id="pcount">0 pieces placed · tap to select · ↻ rotate · ✕ remove</div>
   </div>
@@ -724,10 +740,31 @@ function gcSummaryRows(){
   });
   return rows;
 }
+/* Room Layout for the guest: piece list + a small drawing of each room */
+function layoutSVG(list){
+  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  const parts=list.map(p=>{
+    const w=p.piece.w*SC,h=p.piece.h*SC,cx=p.x+w/2,cy=p.y+h/2;
+    const r=p.rot%180?[h,w]:[w,h];
+    minX=Math.min(minX,cx-r[0]/2);minY=Math.min(minY,cy-r[1]/2);maxX=Math.max(maxX,cx+r[0]/2);maxY=Math.max(maxY,cy+r[1]/2);
+    return `<g transform="translate(${p.x} ${p.y}) rotate(${p.rot} ${w/2} ${h/2})">${mkSVG(p.piece,SC,true)}</g>`;
+  });
+  const pad=10, W=maxX-minX+pad*2, H=maxY-minY+pad*2;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX-pad} ${minY-pad} ${W} ${H}" width="${Math.min(520,W)}">${parts.join('')}</svg>`;
+}
+function layoutRows(){
+  return ROOMS.map(([k,n])=>{
+    const list=placed.filter(p=>p.piece.room===k); if(!list.length) return null;
+    const cnt={}; list.forEach(p=>{cnt[p.piece.label]=(cnt[p.piece.label]||0)+1;});
+    const txt=Object.entries(cnt).map(([l,c])=>(c>1?c+' × ':'')+l).join(', ');
+    return '<div class="gc-lay"><b>Room Layout, '+esc(n)+':</b> '+esc(txt)+layoutSVG(list)+'</div>';
+  }).filter(Boolean).join('');
+}
 function gcRender(){
   const box=document.getElementById('gcSummary'); if(!box) return;
   const rows=gcSummaryRows();
-  box.innerHTML=rows.length?rows.map(([t,p])=>'<div><b>'+esc(t)+':</b> '+esc(p.join(' · '))+'</div>').join(''):'<div>Selections will show here as the form is filled out.</div>';
+  const lay=layoutRows();
+  box.innerHTML=(rows.length||lay)?rows.map(([t,p])=>'<div><b>'+esc(t)+':</b> '+esc(p.join(' · '))+'</div>').join('')+lay:'<div>Selections will show here as the form is filled out.</div>';
   const declined=(typeof protectionStatus==='function')&&protectionStatus().pp==='Declined';
   const pp=document.getElementById('gcPP'); if(pp) pp.hidden=!declined;
 }
@@ -945,6 +982,37 @@ const recl=(w,h,arms)=>{
 const otto=(w,h)=>[R(0,0,w,h,BG),R(0,0,w,4,BLU),R(0,h-4,w,4,BLU),R(0,0,4,h,BLU),R(w-4,0,4,h,BLU),R(5,5,w-10,h-10,CU,2),OUT(w,h)].join('');
 const cons=(w,h)=>[R(0,0,w,h,BLU),R(2,2,w-4,h-4,'#2D5A8E'),`<text x="${w/2}" y="${h/2+4}" text-anchor="middle" font-size="7" fill="white" font-family="sans-serif">CON</text>`,OUT(w,h)].join('');
 
+const WD='#C9A57A',WDK='#8A6A45',WLT='#E3CBA8';
+const tbl=(w,h,t)=>[R(0,0,w,h,WD,3),R(3,3,w-6,h-6,WLT,2),`<rect width="${w}" height="${h}" fill="none" stroke="${WDK}" stroke-width="1.5" rx="3"/>`].join('');
+const rtbl=(d)=>`<circle cx="${d/2}" cy="${d/2}" r="${d/2-1}" fill="${WD}" stroke="${WDK}" stroke-width="1.5"/><circle cx="${d/2}" cy="${d/2}" r="${d/2-5}" fill="${WLT}"/>`;
+const drawers=(w,h,cols,rows)=>{ let g=[R(0,0,w,h,WD,2)]; const cw=(w-4)/cols, rh=(h-4)/rows;
+  for(let c=0;c<cols;c++)for(let r=0;r<rows;r++){ g.push(R(2+c*cw+1,2+r*rh+1,cw-2,rh-2,WLT,1)); g.push(R(2+c*cw+cw/2-3,2+r*rh+rh/2-1,6,2,WDK,1)); }
+  g.push(`<rect width="${w}" height="${h}" fill="none" stroke="${WDK}" stroke-width="1.5" rx="2"/>`); return g.join(''); };
+const mirror=(w,h)=>[R(0,0,w,h,'#9FB8C8',1),R(2,1,w-4,h-2,'#E8F3F8',1),`<rect width="${w}" height="${h}" fill="none" stroke="${BLU}" stroke-width="1.2" rx="1"/>`].join('');
+const bench=(w,h)=>[R(0,0,w,h,BG,3),R(3,3,w-6,h-6,CU,2),OUT(w,h)].join('');
+const dchair=(w,h,arms)=>[R(0,0,w,h,BG,2),R(0,0,w,6,WDK),arms?R(0,0,4,h,WDK):'',arms?R(w-4,0,4,h,WDK):'',R(arms?5:3,8,w-(arms?10:6),h-11,CU,2),OUT(w,h)].join('');
+const stool=(d)=>`<circle cx="${d/2}" cy="${d/2}" r="${d/2-1}" fill="${CU}" stroke="${BLU}" stroke-width="1.5"/>`;
+const reclS=(w,h)=>sofa(w,h,true,true)+`<text x="${w/2}" y="${h-6}" text-anchor="middle" font-size="7" fill="${BLU}" font-family="sans-serif">⇣ recline</text>`;
+const BEDS={Twin:[52,100],Full:[72,100],Queen:[80,106],King:[102,106],'Cal King':[96,112]};
+function bedDraw(w,h,drw){
+  const hb=10, g=[R(0,0,w,h,'#EEF3F7',2), R(0,0,w,hb,BLU,2), R(4,hb+2,w-8,h-hb-8,'#FFFFFF',3)];
+  const pw=(w-14)/2; g.push(R(6,hb+4,pw,14,BG,5), R(8+pw,hb+4,pw,14,BG,5));
+  g.push(R(4,hb+24,w-8,h-hb-30,CU,3), R(0,h-4,w,4,BLU,1));
+  const dr=(x,y,ww,hh)=>R(x,y,ww,hh,WD,1)+R(x+ww/2-3,y+hh/2-1,6,2,WDK,1);
+  if(/L/.test(drw)){ g.push(dr(-1,hb+30,6,26), dr(-1,hb+60,6,26)); }
+  if(/R/.test(drw)){ g.push(dr(w-5,hb+30,6,26), dr(w-5,hb+60,6,26)); }
+  if(drw==='F'){ g.push(dr(w*0.18,h-9,w*0.28,7), dr(w*0.54,h-9,w*0.28,7)); }
+  g.push(`<rect width="${w}" height="${h}" fill="none" stroke="${BLU}" stroke-width="1.5" rx="2"/>`);
+  return g.join('');
+}
+const DRW_TXT={none:'',L:'L drawers',R:'R drawers',LR:'2-side drawers',F:'foot drawers'};
+function getPiece(id){
+  const hit=PIECES.find(x=>x.id===id); if(hit) return hit;
+  const m=/^bed:([^:]+):(\w+)$/.exec(id||''); if(!m||!BEDS[m[1]]) return null;
+  const [w,h]=BEDS[m[1]], drw=m[2];
+  const p={id, room:'br', label:m[1]+' Bed'+(drw!=='none'?' ('+DRW_TXT[drw]+')':''), w, h, draw:()=>bedDraw(w,h,drw)};
+  PIECES.push(p); return p;
+}
 const PIECES=[
   {id:'sofa-b',  label:'Sofa',            w:120,h:55,draw:()=>sofa(120,55,true,true)},
   {id:'laf-sofa',label:'LAF Sofa',         w:110,h:55,draw:()=>sofa(110,55,true,false)},
@@ -969,7 +1037,32 @@ const PIECES=[
   {id:'recl',    label:'Recliner',         w:58,h:68,draw:()=>recl(58,68,true)},
   {id:'arm-rcl', label:'Arm. Recliner',    w:52,h:65,draw:()=>recl(52,65,false)},
   {id:'otto',    label:'Ottoman',          w:60,h:40,draw:()=>otto(60,40)},
+  {id:'rcl-sofa',label:'Reclining Sofa',   w:120,h:60,draw:()=>reclS(120,60)},
+  {id:'rcl-ls',  label:'Reclining Loveseat',w:90,h:60,draw:()=>reclS(90,60)},
+  {id:'ckt',     label:'Cocktail Table',   w:72,h:40,draw:()=>tbl(72,40)},
+  {id:'ckt-rd',  label:'Round Cocktail',   w:48,h:48,draw:()=>rtbl(48)},
+  {id:'endt',    label:'End Table',        w:30,h:30,draw:()=>tbl(30,30)},
+  {id:'sofat',   label:'Sofa Table',       w:90,h:22,draw:()=>tbl(90,22)},
+  {id:'tvs',     label:'TV Stand',         w:100,h:24,draw:()=>drawers(100,24,4,1)},
+  /* Bedroom (beds come from the size + drawer pickers) */
+  {id:'nstand',  room:'br', label:'Nightstand',  w:30,h:24,draw:()=>drawers(30,24,1,2)},
+  {id:'dresser', room:'br', label:'Dresser',     w:90,h:26,draw:()=>drawers(90,26,3,2)},
+  {id:'mirror',  room:'br', label:'Mirror',      w:60,h:6, draw:()=>mirror(60,6)},
+  {id:'chest',   room:'br', label:'Chest',       w:48,h:26,draw:()=>drawers(48,26,1,3)},
+  {id:'mchest',  room:'br', label:'Media Chest', w:60,h:26,draw:()=>drawers(60,26,2,2)},
+  {id:'bbench',  room:'br', label:'Bench',       w:70,h:22,draw:()=>bench(70,22)},
+  /* Dining */
+  {id:'dtbl',    room:'dr', label:'Rect. Table',  w:100,h:56,draw:()=>tbl(100,56)},
+  {id:'dtbl-rd', room:'dr', label:'Round Table',  w:64,h:64, draw:()=>rtbl(64)},
+  {id:'dchr',    room:'dr', label:'Side Chair',   w:26,h:28, draw:()=>dchair(26,28,false)},
+  {id:'dachr',   room:'dr', label:'Arm Chair',    w:30,h:30, draw:()=>dchair(30,30,true)},
+  {id:'dbench',  room:'dr', label:'Bench',        w:80,h:22, draw:()=>bench(80,22)},
+  {id:'stool',   room:'dr', label:'Barstool',     w:24,h:24, draw:()=>stool(24)},
+  {id:'server',  room:'dr', label:'Server',       w:90,h:26, draw:()=>drawers(90,26,3,1)},
 ];
+PIECES.forEach(p=>{ if(!p.room) p.room='lr'; });
+const ROOMS=[['lr','Living Room'],['br','Bedroom'],['dr','Dining Room']];
+let CUR_ROOM='lr';
 
 const SNAP=20,SC=1.4;
 let placed=[],selId=null,ghost=null,dragD=null,nid=0;
@@ -996,9 +1089,19 @@ function coords(e){
   return {x:t.clientX||0,y:t.clientY||0};
 }
 
+function buildTabs(){
+  const t=document.getElementById('roomTabs'); if(!t) return;
+  t.innerHTML=ROOMS.map(([k,n])=>{const c=placed.filter(p=>p.piece.room===k).length; return `<button type="button" class="${k===CUR_ROOM?'on':''}" onclick="setRoom('${k}')">${n}${c?`<span class="rc">${c}</span>`:''}</button>`;}).join('');
+  document.getElementById('bedOpts').classList.toggle('show',CUR_ROOM==='br');
+}
+function setRoom(k){ CUR_ROOM=k; selId=null; buildPal(); render(); queueSave(); }
 function buildPal(){
   const pal=document.getElementById('pal');
-  PIECES.forEach(p=>{
+  pal.innerHTML='';
+  const list=PIECES.filter(p=>p.room===CUR_ROOM && !/^bed:/.test(p.id));
+  if(CUR_ROOM==='br') list.unshift(getPiece('bed:'+document.getElementById('bedSize').value+':'+document.getElementById('bedDrw').value));
+  buildTabs();
+  list.forEach(p=>{
     const d=document.createElement('div');d.className='pt';
     d.innerHTML=mkSVG(p,.52)+`<span class="pl">${p.label}</span>`;
     d.addEventListener('touchstart',e=>startPal(e,p),{passive:false});
@@ -1008,14 +1111,15 @@ function buildPal(){
 }
 
 function updCount(){
-  const n=placed.length;
+  const n=placed.filter(p=>p.piece.room===CUR_ROOM).length;
   document.getElementById('pcount').textContent=n?`${n} piece${n!==1?'s':''} placed · tap to select · ↻ rotate · ✕ remove`:'0 pieces placed';
   document.getElementById('hint').style.opacity=n?'0':'1';
 }
 
 function render(){
   document.querySelectorAll('.pw').forEach(e=>e.remove());
-  placed.forEach(p=>{
+  buildTabs();
+  placed.filter(p=>p.piece.room===CUR_ROOM).forEach(p=>{
     const d=document.createElement('div');
     d.className='pw'+(p.id===selId?' sel':'');
     d.dataset.pid=p.id;
@@ -1108,7 +1212,7 @@ function onUp(e){
 
 function rotP(pid){const p=placed.find(x=>x.id===pid);if(p){p.rot=(p.rot+90)%360;render();queueSave();}}
 function delP(pid){placed=placed.filter(x=>x.id!==pid);if(selId===pid)selId=null;render();queueSave();}
-function clearCvs(){placed=[];selId=null;render();queueSave();}
+function clearCvs(){placed=placed.filter(p=>p.piece.room!==CUR_ROOM);selId=null;render();queueSave();}
 
 function onCvsDeselect(e){
   if(e.target===document.getElementById('cvs')||e.target.closest('.cvs-hint')){selId=null;render();}
@@ -1162,7 +1266,7 @@ function saveForm(){
   state.gc=GC;
   state.mode=OV_MODE; state.guest=(document.getElementById('ovGuest')||{}).value||'';
   state.placed=placed.map(p=>({pid:p.piece.id,x:p.x,y:p.y,rot:p.rot,id:p.id}));
-  state.nid=nid;
+  state.nid=nid; state.layRoom=CUR_ROOM;
   try{
     localStorage.setItem(SK,JSON.stringify(state));
     showToast();
@@ -1228,11 +1332,12 @@ function restoreForm(){
     // Pre / post purchase
     const g=document.getElementById('ovGuest'); if(g) g.value=s.guest||'';
     setMode(s.mode || (fieldByPlaceholder('Ticket #') ? 'post' : 'pre'), true);
-    // Sketch
+    // Room layout
+    if(s.layRoom && ROOMS.some(r=>r[0]===s.layRoom)){ CUR_ROOM=s.layRoom; buildPal(); }
     if(s.placed&&s.placed.length){
       nid=s.nid||0;
       placed=s.placed.map(p=>{
-        const piece=PIECES.find(x=>x.id===p.pid);
+        const piece=getPiece(p.pid);
         return piece?{id:p.id,piece,x:p.x,y:p.y,rot:p.rot}:null;
       }).filter(Boolean);
       render();
@@ -1265,7 +1370,7 @@ function newInspection(){
   setTimeout(gcRender,0);
   document.querySelectorAll('select.ovx').forEach(el=>el.value='');
   document.querySelectorAll('.pill.on').forEach(el=>el.classList.remove('on'));
-  placed=[];selId=null;nid=0;render();
+  placed=[];selId=null;nid=0;CUR_ROOM='lr';buildPal();render();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
